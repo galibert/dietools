@@ -28,8 +28,12 @@ extern "C" {
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+const char *opt_text, *opt_svg, *opt_tiles;
+
+double ratio;
+int sy1;
+
 enum {
-  RATIO = 3,
   WX = 800,
   WY = 600,
   PATCH_SX = 512,
@@ -544,7 +548,7 @@ bool in_limit(point p)
 {
   //  return p.x < 6000 / RATIO && p.y < 4000 / RATIO;
   //  return p.x > 4500;
-  //  return p.x < 2000 && (13999/RATIO-p.y) > 3000;
+  //  return p.x < 2000 && ((state->info.sy - 1)/RATIO-p.y) > 3000;
   return true;
 }
 
@@ -895,7 +899,7 @@ void node::add_net(int pin, net *n)
 
 int node::get_nettype(int nid) const
 {
-  return nid == state.vcc ? VCC : nid == state.gnd ? GND : NORMAL;
+  return nid == state->vcc ? VCC : nid == state->gnd ? GND : NORMAL;
 }
 
 void node::build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &_nets)
@@ -922,7 +926,7 @@ void node::build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &_net
       case GND:
 	if(!gnd_net) {
 	  point p = pos;
-	  p.y = 13999 / RATIO;
+	  p.y = (state->info.sy-1) / ratio;
 	  power_node *gnd = new power_node(false, p);
 	  gnd_net = new net(-1, _nets.size(), false);
 	  nodes.push_back(gnd);
@@ -951,7 +955,7 @@ int node::l_pos(lua_State *L)
 {
   node *n = static_cast<node *>(getparam_any(L, 1));
   lua_pushnumber(L, n->pos.x);
-  lua_pushnumber(L, 13999 / RATIO - n->pos.y);
+  lua_pushnumber(L, (state->info.sy-1) / ratio - n->pos.y);
   return 2;
 }
 
@@ -962,7 +966,7 @@ int node::l_move(lua_State *L)
   luaL_argcheck(L, lua_gettop(L) < 4 || lua_isnil(L, 4) || lua_isstring(L, 4), 4, "orientation expected");
   luaL_argcheck(L, lua_gettop(L) < 5 || lua_isnil(L, 5) || lua_isuserdata(L, 5), 5, "orientation node expected");
   node *n = static_cast<node *>(getparam_any(L, 1));
-  n->move(lua_tonumber(L, 2), (13999/RATIO) - lua_tonumber(L, 3));
+  n->move(lua_tonumber(L, 2), ((state->info.sy - 1)/ratio) - lua_tonumber(L, 3));
   net *nref = lua_gettop(L) >= 5 && !lua_isnil(L, 5) ? net::getparam(L, 5) : NULL;
   if(lua_gettop(L) >= 4 && lua_isstring(L, 4))
     n->set_orientation(lua_tostring(L, 4)[0], nref);
@@ -1117,7 +1121,7 @@ void power_node::to_svg(FILE *fd) const
 
 void power_node::to_txt(FILE *fd) const
 {
-  fprintf(fd, "%c %d %d %d %s\n", is_vcc ? 'v' : 'g', pos.x, 13999/RATIO-pos.y, nets[0]->nid, oname.c_str());
+  fprintf(fd, "%c %d %d %d %s\n", is_vcc ? 'v' : 'g', pos.x, sy1-pos.y, nets[0]->nid, oname.c_str());
 }
 
 void power_node::draw(patch &p, int ox, int oy) const
@@ -1264,7 +1268,7 @@ void pad::to_svg(FILE *fd) const
 
 void pad::to_txt(FILE *fd) const
 {
-  fprintf(fd, "p %d %d %d %d %s\n", pos.x, 13999/RATIO-pos.y, nets[0]->nid, orientation, oname.c_str());
+  fprintf(fd, "p %d %d %d %d %s\n", pos.x, sy1-pos.y, nets[0]->nid, orientation, oname.c_str());
 }
 
 void pad::draw(patch &p, int ox, int oy) const
@@ -1343,9 +1347,9 @@ int mosfet::l_type(lua_State *L)
 int mosfet::l_tostring(lua_State *L)
 {
   mosfet *mn = getparam(L, 1);
-  const tinfo &ti = state.info.trans[mn->trans];
+  const tinfo &ti = state->info.trans[mn->trans];
   char buf[4096];
-  sprintf(buf, "%c%d(%s, %s, %s, %f)", mn->depletion ? 'd' : 't', mn->trans, state.ninfo.net_name(ti.t1).c_str(), state.ninfo.net_name(ti.gate).c_str(), state.ninfo.net_name(ti.t2).c_str(), mn->f);
+  sprintf(buf, "%c%d(%s, %s, %s, %f)", mn->depletion ? 'd' : 't', mn->trans, state->ninfo.net_name(ti.t1).c_str(), state->ninfo.net_name(ti.gate).c_str(), state->ninfo.net_name(ti.t2).c_str(), mn->f);
   lua_pushstring(L, buf);
   return 1;
 }
@@ -1401,9 +1405,9 @@ mosfet::mosfet(int _trans, double _f, bool _depletion)
   f = _f;
   depletion = _depletion;
   orientation = W_S;
-  const tinfo &ti = state.info.trans[trans];
-  pos.x = ti.x / RATIO;
-  pos.y = (13999 - ti.y) / RATIO;
+  const tinfo &ti = state->info.trans[trans];
+  pos.x = ti.x / ratio;
+  pos.y = ((state->info.sy - 1) - ti.y) / ratio;
   char nn[32];
   sprintf(nn, "t%d", trans);
   oname = nn;
@@ -1426,7 +1430,7 @@ double mind(double a, double b)
 void mosfet::refine_position()
 {
   bool v = false;
-  const tinfo &ti = state.info.trans[trans];
+  const tinfo &ti = state->info.trans[trans];
   point pt1 = net_get_center(T1);
   point pt2 = net_get_center(T2);
   point pg = net_get_center(GATE);
@@ -1644,7 +1648,7 @@ void mosfet::to_svg(FILE *fd) const
 
 void mosfet::to_txt(FILE *fd) const
 {
-  fprintf(fd, "%c %d %d %d %d %d %g %d %s\n", depletion ? 'd' : 't', pos.x, 13999/RATIO-pos.y, nets[T1]->nid, nets[GATE]->nid, nets[T2]->nid, f, orientation, oname.c_str());
+  fprintf(fd, "%c %d %d %d %d %d %g %d %s\n", depletion ? 'd' : 't', pos.x, sy1-pos.y, nets[T1]->nid, nets[GATE]->nid, nets[T2]->nid, f, orientation, oname.c_str());
 }
 
 void mosfet::draw(patch &p, int ox, int oy) const
@@ -1730,9 +1734,9 @@ int capacitor::l_type(lua_State *L)
 int capacitor::l_tostring(lua_State *L)
 {
   capacitor *cn = getparam(L, 1);
-  const cinfo &ci = state.info.circs[cn->circ];
+  const cinfo &ci = state->info.circs[cn->circ];
   char buf[4096];
-  sprintf(buf, "c%d(%s, %s, %d)", cn->circ, state.ninfo.net_name(ci.net).c_str(), state.ninfo.net_name(ci.netp).c_str(), ci.surface);
+  sprintf(buf, "c%d(%s, %s, %d)", cn->circ, state->ninfo.net_name(ci.net).c_str(), state->ninfo.net_name(ci.netp).c_str(), ci.surface);
   lua_pushstring(L, buf);
   return 1;
 }
@@ -1773,9 +1777,9 @@ capacitor::capacitor(int _circ)
 {
   circ = _circ;
   orientation = W_S;
-  const cinfo &ci = state.info.circs[circ];
-  pos.x = (ci.x0 + ci.x1 + 1)/2/RATIO;
-  pos.y = (13999 - (ci.y0 + ci.y1 + 1)/2) / RATIO;
+  const cinfo &ci = state->info.circs[circ];
+  pos.x = (ci.x0 + ci.x1 + 1)/2/ratio;
+  pos.y = ((state->info.sy - 1) - (ci.y0 + ci.y1 + 1)/2) / ratio;
 
   f = ci.surface;
   char nn[32];
@@ -1895,7 +1899,7 @@ void capacitor::to_svg(FILE *fd) const
 
 void capacitor::to_txt(FILE *fd) const
 {
-  fprintf(fd, "c %d %d %d %d %g %d %s\n", pos.x, 13999/RATIO-pos.y, nets[T1]->nid, nets[T2]->nid, f, orientation, oname.c_str());
+  fprintf(fd, "c %d %d %d %d %g %d %s\n", pos.x, sy1-pos.y, nets[T1]->nid, nets[T2]->nid, f, orientation, oname.c_str());
 }
 
 void capacitor::draw(patch &p, int ox, int oy) const
@@ -1950,7 +1954,7 @@ int net::l_tostring(lua_State *L)
   if(nn->id == -1)
     lua_pushstring(L, "powernet");
   else
-    lua_pushstring(L, state.ninfo.net_name(nn->id).c_str());
+    lua_pushstring(L, state->ninfo.net_name(nn->id).c_str());
   return 1;
 }
 
@@ -1960,7 +1964,7 @@ int net::l_route(lua_State *L)
   for(int i=2; i < lua_gettop(L); i+=2) {
     luaL_argcheck(L, lua_isnumber(L, i), i, "x expected");
     luaL_argcheck(L, lua_isnumber(L, i+1), i+1, "y expected");
-    n->add_route(point(lua_tonumber(L, i), (13999/RATIO) - lua_tonumber(L, i+1)));
+    n->add_route(point(lua_tonumber(L, i), ((state->info.sy - 1)/ratio) - lua_tonumber(L, i+1)));
   }
   return 0;
 }
@@ -1992,7 +1996,7 @@ net::net(int _id, int _nid, bool is_vcc)
   id = _id;
   nid = _nid;
   if(id != -1)
-    oname = state.ninfo.net_name(id);
+    oname = state->ninfo.net_name(id);
   else
     oname = is_vcc ? "vcc" : "gnd";
 }
@@ -2113,7 +2117,7 @@ void net::to_svg(FILE *fd) const
   for(unsigned int i = 0; i != routes.size(); i++)
     pt[i+nodes.size()] = routes[i];
 
-  fprintf(fd, "  <g id=\"%s\">\n", state.ninfo.net_name(id).c_str());
+  fprintf(fd, "  <g id=\"%s\">\n", state->ninfo.net_name(id).c_str());
   for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
@@ -2148,7 +2152,7 @@ void net::to_txt(FILE *fd) const
 
   fprintf(fd, "%d", np);
   for(int i=0; i != np; i++)
-    fprintf(fd, " %d %d", pt[i].x, 13999/RATIO-pt[i].y);
+    fprintf(fd, " %d %d", pt[i].x, sy1-pt[i].y);
 
   int nd = 0;
   for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
@@ -2278,7 +2282,7 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
   delete[] levels;
 }
 
-void save_txt(const char *fname, const vector<node *> &nodes, const vector<net *> &nets)
+void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, const vector<net *> &nets)
 {
   char msg[4096];
   sprintf(msg, "Error opening %s for writing", fname);
@@ -2287,6 +2291,8 @@ void save_txt(const char *fname, const vector<node *> &nodes, const vector<net *
     perror(msg);
     exit(1);
   }
+
+  fprintf(fd, "%d %d\n", sx, sy);
 
   fprintf(fd, "%d nodes\n", int(nodes.size()));
   for(unsigned int i=0; i != nodes.size(); i++)
@@ -2301,8 +2307,8 @@ void save_txt(const char *fname, const vector<node *> &nodes, const vector<net *
 void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
   vector<unsigned long> transinf;
-  for(unsigned int i=0; i != state.info.trans.size(); i++) {
-    const tinfo &ti = state.info.trans[i];
+  for(unsigned int i=0; i != state->info.trans.size(); i++) {
+    const tinfo &ti = state->info.trans[i];
     unsigned long id;
     if(ti.t1 < ti.t2)
       id = (((unsigned long)(ti.t1)) << 48) | (((unsigned long)(ti.t2)) << 32);
@@ -2315,42 +2321,42 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
   sort(transinf.begin(), transinf.end());
 
   double f = 0;
-  for(unsigned int i=0; i != state.info.trans.size(); i++) {
+  for(unsigned int i=0; i != state->info.trans.size(); i++) {
     int tid = transinf[i] & 0xffff;
-    f += state.info.trans[tid].f;
-    if(i != state.info.trans.size()-1 && !((transinf[i] ^ transinf[i+1]) & 0xffffffffffff0000UL))
+    f += state->info.trans[tid].f;
+    if(i != state->info.trans.size()-1 && !((transinf[i] ^ transinf[i+1]) & 0xffffffffffff0000UL))
       continue;
 
-    mosfet *m = new mosfet(tid, f, state.depletion[tid]);
+    mosfet *m = new mosfet(tid, f, state->depletion[tid]);
     nodes.push_back(m);
-    nodemap[state.info.trans[tid].t1].push_back(ref(m, T1));
-    nodemap[state.info.trans[tid].t2].push_back(ref(m, T2));
-    nodemap[state.info.trans[tid].gate].push_back(ref(m, GATE));
+    nodemap[state->info.trans[tid].t1].push_back(ref(m, T1));
+    nodemap[state->info.trans[tid].t2].push_back(ref(m, T2));
+    nodemap[state->info.trans[tid].gate].push_back(ref(m, GATE));
     f = 0;
   }
 }
 
 void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  for(unsigned int i=0; i != state.info.circs.size(); i++) {
-    const cinfo &ci = state.info.circs[i];
+  for(unsigned int i=0; i != state->info.circs.size(); i++) {
+    const cinfo &ci = state->info.circs[i];
     if(ci.type == 'c') {
       capacitor *caps = new capacitor(i);
       nodes.push_back(caps);
-      nodemap[state.info.circs[i].net].push_back(ref(caps, T1));
-      nodemap[state.info.circs[i].netp].push_back(ref(caps, T2));
+      nodemap[state->info.circs[i].net].push_back(ref(caps, T1));
+      nodemap[state->info.circs[i].netp].push_back(ref(caps, T2));
     }
   }
 }
 
 void build_pads(const char *fname, vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  pad_info pp(fname, state.ninfo);
+  pad_info pp(fname, state->ninfo);
   for(unsigned int i=0; i != pp.pads.size(); i++) {
     const pinfo &pi = pp.pads[i];
     point p;
-    p.x = pi.x / RATIO;
-    p.y = (13999 - pi.y) / RATIO;
+    p.x = pi.x / ratio;
+    p.y = ((state->info.sy - 1) - pi.y) / ratio;
     int orientation;
     switch(pi.orientation) {
     case 'n': orientation = N_S; break;
@@ -2367,10 +2373,10 @@ void build_pads(const char *fname, vector<node *> &nodes, map<int, list<ref> > &
 
 void build_nets(vector<net *> &nets, const map<int, list<ref> > &nodemap)
 {
-  for(unsigned int i=0; i != state.info.nets.size(); i++) {
+  for(unsigned int i=0; i != state->info.nets.size(); i++) {
     net *n = new net(i, nets.size(), false);
     nets.push_back(n);
-    if(int(i) == state.vcc || int(i) == state.gnd)      
+    if(int(i) == state->vcc || int(i) == state->gnd)      
       continue;
     map<int, list<ref> >::const_iterator k = nodemap.find(i);
     if(k != nodemap.end())
@@ -2411,9 +2417,9 @@ int l_nodes_rect(lua_State *L)
   luaL_argcheck(L, lua_isnumber(L, 4), 4, "y1 expected");
 
   int x0 = lua_tonumber(L, 1);
-  int y0 = 13999 / RATIO - lua_tonumber(L, 2);
+  int y0 = (state->info.sy - 1) / ratio - lua_tonumber(L, 2);
   int x1 = lua_tonumber(L, 3);
-  int y1 = 13999 / RATIO - lua_tonumber(L, 4);
+  int y1 = (state->info.sy - 1) / ratio - lua_tonumber(L, 4);
 
   lua_newtable(L);
   int id = 1;
@@ -2429,7 +2435,7 @@ int l_nodes_rect(lua_State *L)
 
 net *get_net_from_name(const char *name)
 {
-  int nid = state.ninfo.find(name);
+  int nid = state->ninfo.find(name);
   if(nid == -1) {
     fprintf(stderr, "net %s unknown\n", name);
     exit(1);
@@ -2625,10 +2631,10 @@ int l_make_match(lua_State *L)
   for(set<net *>::const_iterator i = all_nets.begin(); i != all_nets.end(); i++) {
     net *n = *i;
     if(preset_nets.find(n) == preset_nets.end()) {
-      if(n->id == -1 || state.ninfo.names[n->id].empty())
+      if(n->id == -1 || state->ninfo.names[n->id].empty())
 	continue;
       char buf[4096];
-      sprintf(buf, "%s~%s\n", net_names[n].c_str(), state.ninfo.names[n->id].c_str());
+      sprintf(buf, "%s~%s\n", net_names[n].c_str(), state->ninfo.names[n->id].c_str());
       res += buf;
     }
   }
@@ -2984,7 +2990,7 @@ int l_match(lua_State *L)
 	    if(preset_nets_set.find(params[i]) != preset_nets_set.end())
 	      goto next_alt_in_slot;
 	    if(name_constraints.find(me.params[i]) != name_constraints.end())
-	      if(params[i]->id == -1 || state.ninfo.names[params[i]->id].empty() || !string_match(state.ninfo.names[params[i]->id], name_constraints[me.params[i]]))
+	      if(params[i]->id == -1 || state->ninfo.names[params[i]->id].empty() || !string_match(state->ninfo.names[params[i]->id], name_constraints[me.params[i]]))
 		 goto next_alt_in_slot;
 	    temp_nets[me.params[i]] = params[i];
 	    temp_used_nets.insert(params[i]);
@@ -3148,7 +3154,7 @@ int l_move(lua_State *L)
       p++;
     int dy = strtol(string(q, p).c_str(), 0, 10);
 
-    n->move(x+dx, (13999/RATIO) - (y+dy));
+    n->move(x+dx, ((state->info.sy - 1)/ratio) - (y+dy));
     while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == move.end())
@@ -3252,7 +3258,7 @@ int l_route(lua_State *L)
 	p++;
       int dy = strtol(string(q, p).c_str(), 0, 10);
 
-      n->add_route(point(x+dx, (13999/RATIO) - (y+dy)));
+      n->add_route(point(x+dx, sy1 - (y+dy)));
       while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
 	p++;
       if(p == move.end())
@@ -3262,6 +3268,44 @@ int l_route(lua_State *L)
       break;
     p++;
   }
+  return 0;
+}
+
+int l_setup(lua_State *L)
+{
+  state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3));
+  ratio = lua_tonumber(L, 5);
+
+  sy1 = (state->info.sy - 1)/ratio;
+
+  map<int, list<ref> > nodemap;
+
+  build_mosfets(nodes, nodemap);
+  build_capacitors(nodes, nodemap);
+  build_pads(lua_tostring(L, 4), nodes, nodemap);
+  build_nets(nets, nodemap);
+  build_power_nodes_and_nets(nodes, nets);
+
+  for(unsigned int i=0; i != nodes.size(); i++)
+    nodes[i]->refine_position();
+  return 0;
+}
+
+int l_text(lua_State *L)
+{
+  opt_text = lua_tostring(L, 1);
+  return 0;
+}
+
+int l_svg(lua_State *L)
+{
+  opt_svg = lua_tostring(L, 1);
+  return 0;
+}
+
+int l_tiles(lua_State *L)
+{
+  opt_tiles = lua_tostring(L, 1);
   return 0;
 }
 
@@ -3275,6 +3319,11 @@ int luaopen_mschem(lua_State *L)
     { "move",        l_move        },
     { "route",       l_route       },
     { "named_net",   l_named_net   },
+    { "setup",       l_setup       },
+    { "text",        l_text        },
+    { "svg",         l_svg         },
+    { "tiles",       l_tiles       },
+
     { }
   };
   luaL_openlib(L, "_G", mschem_l, 0);
@@ -3321,36 +3370,34 @@ void lua_fun(const char *fname, vector<node *> &nodes, vector<net *> &nets)
 
 int main(int argc, char **argv)
 {
+  ratio = 1;
+  opt_text = opt_svg = opt_tiles = NULL;
+
   freetype_init();
 
-  map<int, list<ref> > nodemap;
 
-  build_mosfets(nodes, nodemap);
-  build_capacitors(nodes, nodemap);
-  build_pads("../pads.txt", nodes, nodemap);
-  build_nets(nets, nodemap);
-  build_power_nodes_and_nets(nodes, nets);
-
-  for(unsigned int i=0; i != nodes.size(); i++)
-    nodes[i]->refine_position();
-
-  if(argc >= 2)
-    lua_fun(argv[1], nodes, nets);
+  lua_fun(argv[1], nodes, nets);
 
   build_net_links(nets);
 
-  FILE *fd = svg_open("../schem.svg", 16000 / RATIO, 14000 / RATIO);
-  for(unsigned int i=0; i != nodes.size(); i++)
-    nodes[i]->to_svg(fd);
-  for(unsigned int i=0; i != nets.size(); i++)
-    nets[i]->to_svg(fd);
+  if(opt_svg) {
+    FILE *fd = svg_open(opt_svg, state->info.sx / ratio, state->info.sy / ratio);
+    for(unsigned int i=0; i != nodes.size(); i++)
+      nodes[i]->to_svg(fd);
+    for(unsigned int i=0; i != nets.size(); i++)
+      nets[i]->to_svg(fd);
 
-  svg_close(fd);		      
+    svg_close(fd);
+  }
 
-  save_txt("../schem.txt", nodes, nets);
+  if(opt_text)
+    save_txt(opt_text, state->info.sx / ratio, state->info.sy / ratio, nodes, nets);
 
-  if(argc == 3)
-    draw("../schem/tiles/%d/y%03d_x%03d.png", nodes, nets);
+  if(opt_tiles) {
+    char buf[4096];
+    sprintf(buf, "%s/%%d/y%%03d_x%%03d.png", opt_tiles);
+    draw(opt_tiles, nodes, nets);
+  }
 
   return 0;
 }

@@ -1,6 +1,6 @@
 ALLINC = -I../libdie `freetype-config --cflags`
 ALLLIB = -L../libdie -ldie `freetype-config --libs` -llua -lz
-DEPLIB = 
+DEPLIB = ../libdie/libdie.a
 
 PROG = mschem
 OBJS = mschem.o pad_info.o globals.o

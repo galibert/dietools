@@ -3,9 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 
-State::State() : cmap("../layers.map", 16000, 14000, false),
-		 info("../m68000.txt"),
-		 ninfo("../pins.txt", cmap, info)
+State::State(const char *info_path, const char *cmap_path, const char *pins_path) :
+  info(info_path),
+  cmap(cmap_path, info.sx, info.sy, false),
+  ninfo(pins_path, cmap, info)
 {
   vcc = ninfo.nets["vcc"];
   gnd = ninfo.nets["gnd"];

@@ -96,3 +96,13 @@ bool reader::eof()
 {
   return !*pos;
 }
+
+bool reader::eol()
+{
+  return has_nl;
+}
+
+char reader::peek()
+{
+  return *pos;
+}

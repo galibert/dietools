@@ -31,15 +31,9 @@ public:
   map<int, list<int> > gate_to_trans;
   map<int, list<int> > term_to_trans;
 
-  circuit_info(const char *fname);
+  int sx, sy;
 
-private:
-  char *pos;
-  bool has_nl;
-  const char *gw();
-  void nl();
-  int gi();
-  double gd();
+  circuit_info(const char *fname);
 };
 
 #endif

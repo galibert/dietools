@@ -55,7 +55,7 @@ net_info::net_info(const char *fname, const circuit_map &cmap, const circuit_inf
       exit(1);
     }
 
-    int circ = cmap.p(cm, x, 13999-y);
+    int circ = cmap.p(cm, x, info.sy-1-y);
     if(circ == -1) {
       fprintf(stderr, "No circuit at %c %d %d\n", type, x, y);
       exit(1);

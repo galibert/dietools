@@ -1,3 +1,3 @@
 #include "globals.h"
 
-State state;
+State *state;

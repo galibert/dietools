@@ -3,6 +3,6 @@
 
 #include <State.h>
 
-extern State state;
+extern State *state;
 
 #endif

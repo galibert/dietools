@@ -17,14 +17,6 @@ public:
   vector<pinfo> pads;
 
   pad_info(const char *fname, const net_info &info);
-
-private:
-  char *pos;
-  bool has_nl;
-  const char *gw();
-  void nl();
-  int gi();
-  double gd();
 };
 
 #endif

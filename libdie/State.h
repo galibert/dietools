@@ -10,8 +10,8 @@
 class State {
 public:
   enum { S_0, S_1, S_FLOAT };
-  circuit_map cmap;
   circuit_info info;
+  circuit_map cmap;
   net_info ninfo;
 
   int vcc, gnd;
@@ -25,7 +25,7 @@ public:
   vector<int> power;
   vector<int> power_dist;
 
-  State();
+  State(const char *info_path, const char *cmap_path, const char *pins_path);
 
   void reset_to_floating();
   void reset_to_zero();

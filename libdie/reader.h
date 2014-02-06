@@ -11,6 +11,8 @@ struct reader {
   double gd();
 
   bool eof();
+  bool eol();
+  char peek();
 
   reader(const char *fname);
   ~reader();

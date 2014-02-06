@@ -1,0 +1,136 @@
+#ifndef STATE_H
+#define STATE_H
+
+#include <vector>
+#include <string>
+#include <set>
+#include <map>
+#include <list>
+
+using namespace std;
+
+class net {
+public:
+  struct point {
+    int x, y;
+  };
+  struct line {
+    int p1, p2;
+  };
+
+  string name;
+  vector<point> pt;
+  vector<line> lines;
+  vector<int> dots;
+  unsigned int id;
+
+  void draw(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+};
+
+class node {
+public:
+  enum { NODE_MARK = 0x01000000, NET_MARK = 0x02000000, TYPE_MASK = 0xff000000, ID_MASK = 0xffffff };
+  enum { T, D, V, G, P, C };
+  enum { T1, T2, GATE };
+  enum {
+    W_S = 0,
+    E_S = 1,
+    N_S = 2,
+    S_S = 3,
+    W_D = 4,
+    E_D = 5,
+    N_D = 6,
+    S_D = 7
+  };
+
+  int type;
+  int x, y, orientation;
+  int x0, y0, x1, y1;
+  string name;
+  unsigned int id;
+
+  double f;
+  int netids[3];
+  net *nets[3];
+
+  int name_width, name_height;
+  unsigned char *name_image;
+
+  void bbox();
+  void draw(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+  void draw_mosfet(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+  void draw_gnd(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+  void draw_vcc(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+  void draw_pad(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+  void draw_capacitor(unsigned int *ids, int ox, int oy, int w, int h, int z) const;
+};
+
+class state_t {
+public:
+  int sx, sy;
+
+  vector<bool> selectable_net;
+  vector<bool> highlight;
+  vector<bool> is_fixed;
+  vector<char> fixed_level;
+  vector<char> power;
+  vector<int> delay;    
+
+  vector<vector<int> > gate_to_trans;
+  vector<vector<int> > term_to_trans;
+
+
+  set<string> save_selected;
+  map<string, char> save_fixed_level;
+
+  void save();
+  void build();
+  void reload();
+  void apply_changed(set<int> changed);
+
+  state_t();
+
+private:
+  void add_transistor(node *tr, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
+  void add_net(int nid, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
+  void dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve);
+  string c2s(int vr, const vector<int> &constants, int pos);
+  void build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const;
+
+  static void _(const vector<int> &constants, vector<int> &level);
+  static void __(const vector<int> &constants, vector<int> &level);
+  static void ___(const vector<int> &constants, vector<int> &level);
+  static void ____(const vector<int> &constants, vector<int> &level);
+  static void _____(const vector<int> &constants, vector<int> &level);
+  static void ______(const vector<int> &constants, vector<int> &level);
+  static void mSa___(const vector<int> &constants, vector<int> &level);
+  static void mSa____(const vector<int> &constants, vector<int> &level);
+  static void mSa______(const vector<int> &constants, vector<int> &level);
+  static void _mSb___(const vector<int> &constants, vector<int> &level);
+  static void mSaa___(const vector<int> &constants, vector<int> &level);
+  static void _mSbb__(const vector<int> &constants, vector<int> &level);
+  static void mSa___pSa___(const vector<int> &constants, vector<int> &level);
+  static void pSb___mSb___(const vector<int> &constants, vector<int> &level);
+  static void pS_a_pSba__mSba__(const vector<int> &constants, vector<int> &level);
+  static void mLaa_pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level);
+  static void mSa__pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level);
+  static void pS_a_mSa__pSba__mSba__(const vector<int> &constants, vector<int> &level);
+
+  map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
+  void register_solvers();
+};
+
+extern vector<node *> nodes;
+extern vector<net *> nets;
+extern state_t state;
+
+extern const char *schem_file;
+
+string id_to_name(unsigned int id);
+
+extern class SVMain *svmain;
+
+void state_load(const char *fname);
+void freetype_init();
+
+#endif
