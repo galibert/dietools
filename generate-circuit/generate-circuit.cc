@@ -469,8 +469,6 @@ void map_vias_set(int x, int y, via_info *via, const vector<circuit_info> *circu
     int nn = na == -1 ? np : na;
     if((*circuit_infos)[nn].type == TRANSISTOR)
       fprintf(stderr, "via at (%d, %d) touches a transistor\n", x, cmap->sy-1-y);    
-    else if((*circuit_infos)[nn].type == BURIED)
-      fprintf(stderr, "via at (%d, %d) touches a buried contact\n", x, cmap->sy-1-y);    
     else if((*circuit_infos)[nn].type == CAPACITOR)
       fprintf(stderr, "via at (%d, %d) touches a capacitor\n", x, cmap->sy-1-y);    
     else if(via->active_poly == -1)

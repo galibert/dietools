@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NetStateListUI</class>
+ <widget class="QScrollArea" name="NetStateListUI">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>432</width>
+    <height>340</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>Nets</string>
+  </property>
+  <property name="verticalScrollBarPolicy">
+   <enum>Qt::ScrollBarAlwaysOn</enum>
+  </property>
+  <property name="horizontalScrollBarPolicy">
+   <enum>Qt::ScrollBarAlwaysOff</enum>
+  </property>
+  <property name="widgetResizable">
+   <bool>true</bool>
+  </property>
+  <widget class="QWidget" name="contents">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>409</width>
+     <height>334</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="contents_layout"/>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+ <slots>
+  <signal>state_change_up()</signal>
+  <signal>state_change_down()</signal>
+  <signal>closed()</signal>
+  <slot>state_changed_up()</slot>
+  <slot>state_changed_down()</slot>
+  <slot>net_closed(int)</slot>
+ </slots>
+</ui>

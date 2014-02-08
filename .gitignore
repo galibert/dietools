@@ -6,3 +6,4 @@ generate-bitmask-images/generate-bitmask-images
 generate-circuit/generate-circuit
 mschem/mschem
 sview/sview
+mview/mview

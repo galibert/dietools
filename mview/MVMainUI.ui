@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MVMainUI</class>
+ <widget class="QMainWindow" name="MVMainUI">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>487</width>
+    <height>443</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>M68000</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="1">
+     <widget class="QScrollBar" name="vscroll">
+      <property name="maximum">
+       <number>13999</number>
+      </property>
+      <property name="value">
+       <number>7000</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="MVDisplay" name="display_widget" native="true">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QScrollBar" name="hscroll">
+      <property name="maximum">
+       <number>15999</number>
+      </property>
+      <property name="value">
+       <number>8000</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>487</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_Quit"/>
+   </widget>
+   <widget class="QMenu" name="menu_Zoom">
+    <property name="title">
+     <string>&amp;Zoom</string>
+    </property>
+    <addaction name="actionZoom_In"/>
+    <addaction name="actionZoom_Out"/>
+    <addaction name="action_Fit_to_window"/>
+   </widget>
+   <widget class="QMenu" name="menuLayers">
+    <property name="title">
+     <string>Layers</string>
+    </property>
+    <addaction name="actionActive"/>
+    <addaction name="actionPoly"/>
+    <addaction name="actionMetal"/>
+    <addaction name="separator"/>
+    <addaction name="actionLevels"/>
+   </widget>
+   <widget class="QMenu" name="menuSimulation">
+    <property name="title">
+     <string>Simulation</string>
+    </property>
+    <addaction name="actionReset_to_floating"/>
+    <addaction name="actionReset_to_zero"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menu_Zoom"/>
+   <addaction name="menuLayers"/>
+   <addaction name="menuSimulation"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionZoom_In"/>
+   <addaction name="actionZoom_Out"/>
+   <addaction name="action_Fit_to_window"/>
+   <addaction name="separator"/>
+   <addaction name="actionActive"/>
+   <addaction name="actionPoly"/>
+   <addaction name="actionMetal"/>
+   <addaction name="separator"/>
+   <addaction name="actionLevels"/>
+  </widget>
+  <action name="action_Quit">
+   <property name="text">
+    <string>&amp;Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionZoom_In">
+   <property name="icon">
+    <iconset>
+     <normaloff>icons/zoom-in.svg</normaloff>icons/zoom-in.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom &amp;In</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="actionZoom_Out">
+   <property name="icon">
+    <iconset>
+     <normaloff>icons/zoom-out.svg</normaloff>icons/zoom-out.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom &amp;Out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="action_Fit_to_window">
+   <property name="icon">
+    <iconset>
+     <normaloff>icons/zoom-fit-best.svg</normaloff>icons/zoom-fit-best.svg</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Fit to window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+1</string>
+   </property>
+  </action>
+  <action name="actionActive">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Active</string>
+   </property>
+   <property name="toolTip">
+    <string>Enable/disable active layer view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionPoly">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Poly</string>
+   </property>
+   <property name="toolTip">
+    <string>Enable.disable polysilicon layer view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionMetal">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Metal</string>
+   </property>
+   <property name="toolTip">
+    <string>Enable/Disable metal layer view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionLevels">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Levels</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="actionReset_to_floating">
+   <property name="text">
+    <string>Reset to floating</string>
+   </property>
+  </action>
+  <action name="actionReset_to_zero">
+   <property name="text">
+    <string>Reset to zero</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MVDisplay</class>
+   <extends>QWidget</extends>
+   <header>MVDisplay.h</header>
+   <container>1</container>
+   <slots>
+    <signal>track(int)</signal>
+    <slot>fit_to_window()</slot>
+    <slot>zoom_in()</slot>
+    <slot>zoom_out()</slot>
+    <slot>vscroll(int)</slot>
+    <slot>hscroll(int)</slot>
+    <slot>set_active(bool)</slot>
+    <slot>set_poly(bool)</slot>
+    <slot>set_metal(bool)</slot>
+    <slot>set_levels(bool)</slot>
+    <slot>state_changed()</slot>
+   </slots>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>action_Quit</sender>
+   <signal>activated()</signal>
+   <receiver>MVMainUI</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>473</x>
+     <y>376</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>action_Fit_to_window</sender>
+   <signal>activated()</signal>
+   <receiver>display_widget</receiver>
+   <slot>fit_to_window()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>313</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionZoom_In</sender>
+   <signal>activated()</signal>
+   <receiver>display_widget</receiver>
+   <slot>zoom_in()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>313</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionZoom_Out</sender>
+   <signal>activated()</signal>
+   <receiver>display_widget</receiver>
+   <slot>zoom_out()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>313</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionActive</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>display_widget</receiver>
+   <slot>set_active(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>313</x>
+     <y>284</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>hscroll</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>display_widget</receiver>
+   <slot>hscroll(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>371</x>
+     <y>419</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>365</x>
+     <y>361</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>vscroll</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>display_widget</receiver>
+   <slot>vscroll(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>471</x>
+     <y>210</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>291</x>
+     <y>210</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionPoly</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>display_widget</receiver>
+   <slot>set_poly(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>232</x>
+     <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionMetal</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>display_widget</receiver>
+   <slot>set_metal(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>232</x>
+     <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionLevels</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>display_widget</receiver>
+   <slot>set_levels(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>232</x>
+     <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>display_widget</sender>
+   <signal>track(int)</signal>
+   <receiver>MVMainUI</receiver>
+   <slot>track(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>232</x>
+     <y>226</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>221</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>MVMainUI</sender>
+   <signal>state_change()</signal>
+   <receiver>display_widget</receiver>
+   <slot>state_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>243</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>232</x>
+     <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionReset_to_floating</sender>
+   <signal>activated()</signal>
+   <receiver>MVMainUI</receiver>
+   <slot>reset_to_floating()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>221</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionReset_to_zero</sender>
+   <signal>activated()</signal>
+   <receiver>MVMainUI</receiver>
+   <slot>reset_to_zero()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>243</x>
+     <y>221</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <signal>state_change()</signal>
+  <slot>undo()</slot>
+  <slot>redo()</slot>
+  <slot>track(int)</slot>
+  <slot>state_changed()</slot>
+  <slot>net_list_closed()</slot>
+  <slot>reset_to_floating()</slot>
+  <slot>reset_to_zero()</slot>
+ </slots>
+</ui>
