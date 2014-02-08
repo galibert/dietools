@@ -450,7 +450,7 @@ void state_load(const char *fname)
     n->id = node::NODE_MARK | i;
     n->type = type;
     n->x = rd.gi()*10;
-    n->y = (4666-rd.gi())*10;
+    n->y = (state.sy-rd.gi())*10;
     n->netids[node::T1] = rd.gi();
     if(type == node::T || type == node::D) {
       n->netids[node::GATE] = rd.gi();
@@ -482,7 +482,7 @@ void state_load(const char *fname)
     n->pt.resize(nx);
     for(int j=0; j != nx; j++) {
       n->pt[j].x = rd.gi()*10;
-      n->pt[j].y = (4666-rd.gi())*10;
+      n->pt[j].y = (state.sy-rd.gi())*10;
     }
     nx = rd.gi();
     n->lines.resize(nx);
@@ -836,121 +836,53 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
 {
   constants.clear();
   equation = "";
-  for(unsigned int i = 0; i != nids_to_solve.size(); i++) {
-    int nid = nids_to_solve[i];
-    for(set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
-      node *tr = *j;
-      int nt1 = tr->netids[node::T1];
-      int nt2 = tr->netids[node::T2];
-      int ng  = tr->netids[node::GATE];
-      if(nt1 != nid && nt2 != nid)
-	continue;
-      if(nt1 == nid) {
-	nt1 = nt2;
-	nt2 = nid;
-      }
-      map<int, int>::const_iterator k = nid_to_index.find(nt1);
-      int t1_id = k == nid_to_index.end() ? -1 : k->second;
-      k = nid_to_index.find(ng);
-      int gate_id = k == nid_to_index.end() ? -1 : k->second;
+  for(set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
+    node *tr = *j;
+    int nt1 = tr->netids[node::T1];
+    int ng  = tr->netids[node::GATE];
+    int nt2 = tr->netids[node::T2];
 
-      int pnt1 = t1_id == -1 ? power[nt1] : levels[t1_id];
-      int pnt2 = levels[i];
-      int png  = gate_id == -1 ? power[ng] : levels[gate_id];
+    map<int, int>::const_iterator k;
 
-      int ithr = tr->type == node::T ? 7 : -30;
-      int thr = png - ithr;
-      // L abc (c-a)*(2*(b-t)-c-a)
-      // S abc (b-t-a)**2
-      if(nid == 973 || nid == 801)
-	printf("add trans %s (%d %d %d) %f\n", tr->name.c_str(), pnt1, png, pnt2, tr->f);
-      if(pnt1 < pnt2 && thr >= pnt1) {
-	constants.push_back(int(tr->f*1000));
+    k = nid_to_index.find(nt1);
+    int t1_id   = k == nid_to_index.end() ? -1 : k->second;
+    k = nid_to_index.find(ng);
+    int gate_id = k == nid_to_index.end() ? -1 : k->second;
+    k = nid_to_index.find(nt2);
+    int t2_id   = k == nid_to_index.end() ? -1 : k->second;
+
+    int pnt1 = t1_id   == -1 ? power[nt1] : levels[t1_id];
+    int png  = gate_id == -1 ? power[ng]  : levels[gate_id];
+    int pnt2 = t2_id   == -1 ? power[nt2] : levels[t2_id];
+
+    constants.push_back(int(tr->f*1000));
+    if(!equation.empty())
+      equation += ' ';
+    if(tr->type == node::T)
+      equation += 'T';
+    else
+      equation += 'D';
+
+    if(t2_id != -1 && (t1_id == -1 || t1_id > t2_id)) {
+      // Invert t2 and t1
+      equation += char('a' + t2_id);
+      equation += gate_id == -1 ? '.' : char('a' + gate_id);
+      equation += t1_id == -1 ? '.' : char('a' + t1_id);
+      if(gate_id == -1)
+	constants.push_back(png);
+      if(t1_id == -1)
 	constants.push_back(pnt1);
-	if(thr < pnt2) {
-	  // Saturation S -> D
-	  if(t1_id != -1) {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "+S" + char('a'+t1_id) + char('a'+gate_id) + '.';
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "+S" + char('a'+t1_id) + "..";
-	    }
-	  } else {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "+S" + '.' + char('a'+gate_id) + '.';
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "+S" + "...";
-	    }
-	  }
-	} else {
-	  // Linear S -> D
-	  if(t1_id != -1) {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "+L" + char('a'+t1_id) + char('a'+gate_id) + char('a'+i);
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "+L" + char('a'+t1_id) + '.' + char('a'+i);
-	    }
-	  } else {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "+L" + '.' + char('a'+gate_id) + char('a'+i);
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "+L" + ".." + char('a'+i);
-	    }
-	  }
-	}
-      } else if(pnt1 > pnt2 && thr >= pnt2) {
-	constants.push_back(int(tr->f*1000));
+    } else {
+      equation += t1_id == -1 ? '.' : char('a' + t1_id);
+      equation += gate_id == -1 ? '.' : char('a' + gate_id);
+      equation += t2_id == -1 ? '.' : char('a' + t2_id);
+      if(t1_id == -1)
 	constants.push_back(pnt1);
-	if(thr < pnt1) {
-	  // Saturation D -> S
-	  if(t1_id != -1) {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "-S" + char('a'+i) + char('a'+gate_id) + '.';
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "-S" + char('a'+i) + "..";
-	    }
-	  } else {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "-S" + char('a'+i) + char('a'+gate_id) + '.';
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "-S" + char('a'+i) + "..";
-	    }
-	  }
-	} else {
-	  // Linear S -> D
-	  if(t1_id != -1) {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "-L" + char('a'+i) + char('a'+gate_id) + char('a'+t1_id);
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "-L" + char('a'+i) + '.' + char('a'+t1_id);
-	    }
-	  } else {
-	    if(gate_id != -1) {
-	      constants.push_back(ithr);
-	      equation = equation + "-L" + char('a'+i) + char('a'+gate_id) + '.';
-	    } else {
-	      constants.push_back(thr);
-	      equation = equation + "-L" + char('a'+i) + "..";
-	    }
-	  }
-	}
-      }
+      if(gate_id == -1)
+	constants.push_back(png);
+      if(t2_id == -1)
+	constants.push_back(pnt2);
     }
-    equation += ';';
   }
 }
 
@@ -998,42 +930,35 @@ void state_t::apply_changed(set<int> changed)
 	  assert(nets[*i]->name != "gnd" && nets[*i]->name != "vcc");
 	  nids_to_solve.push_back(*i);
 	}
-      if(!nids_to_solve.empty()) {
+      if(!nids_to_solve.empty() && !accepted_trans.empty()) {
 	map<int, int> nid_to_index;
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  nid_to_index[nids_to_solve[i]] = i;
-	string prev_eq;
+
 	vector<int> levels;
 	levels.resize(nids_to_solve.size());
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  levels[i] = power[nids_to_solve[i]];
-	if(nids_to_solve[0] == 973) {
-	  levels[0] = 29;
-	  levels[1] = 15;
-	}
-	for(;;) {
-	  string equation;
-	  vector<int> constants;
-	  build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
-	  if(equation == prev_eq)
-	    break;
 
-	  map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
-	  if(sp == solvers.end()) {
-	    printf("Unhandled equation system.\n");
-	    dump_equation_system(equation, constants, nids_to_solve);
-	    for(unsigned int i=0; i != nids_to_solve.size(); i++)
-	      highlight[nids_to_solve[i]] = true;
-	    return;
-	  }
+	string equation;
+	vector<int> constants;
+	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
+	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
+	if(sp == solvers.end()) {
+	  printf("Unhandled equation system.\n");
 	  dump_equation_system(equation, constants, nids_to_solve);
-	  sp->second(constants, levels);
+	  for(unsigned int i=0; i != nids_to_solve.size(); i++)
+	    highlight[nids_to_solve[i]] = true;
+	  return;
+	}
+
+	//	dump_equation_system(equation, constants, nids_to_solve);
+	sp->second(constants, levels);
+	if(0) {
 	  printf("  levels:\n");
 	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	    printf("   %c: %d.%d\n", 'a'+i, levels[i]/10, levels[i]%10);
-
-	  prev_eq = equation;
 	}
       }
     }
@@ -1071,200 +996,66 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
     printf(" %s", nets[nids_to_solve[i]]->name.c_str());
   printf("\n");  
 
-  for(int vr = 0; vr < 2; vr++) {
+  for(int vr=0; vr<2; vr++) {
     if(vr)
-      printf("  alt:\n");
+      printf("  mosfets k:\n");
     else
-      printf("  system:\n");
+      printf("  mosfets inst:\n");
     unsigned int pos = 0, cpos = 0;
-    for(unsigned int i=0; i != nids_to_solve.size(); i++) {
+    while(pos != equation.size()) {
       printf("   ");
-      while(equation[pos] != ';') {
-	printf(" %c %s*", equation[pos++], c2s(vr, constants, cpos++).c_str());
-	char type = equation[pos++];
-	char t1   = equation[pos++];
-	char tg   = equation[pos++];
-	char t2   = equation[pos++];
-
-	int id = (type == 'S' ? 8 : 0) | (t1 == '.' ? 4 : 0) | (t2 == '.' ? 2 : 0) | (tg == '.' ? 1 : 0);
-	switch(id) {
-	case 0x01:
-	  printf("(%c-%c)*(2*%s-%c-%c)", t1, t2, c2s(vr, constants, cpos+1).c_str(), t1, t2);
-	  break;
-
-	case 0x02:
-	  printf("(%c-%s)*(2*(%c-%s)-%c-%s)", t1, c2s(vr, constants, cpos).c_str(), tg, c2s(vr, constants, cpos+1).c_str(), t1, c2s(vr, constants, cpos).c_str());
-	  break;
-	  
-	case 0x0a:
-	  printf("(%c-%s-%c [%s])^2", tg, c2s(vr, constants, cpos+1).c_str(), t1, c2s(vr, constants, cpos).c_str());
-	  break;
-
-	case 0x0b:
-	  printf("(%s-%c)^2", c2s(vr, constants, cpos+1).c_str(), t1);
-	  break;
-
-	case 0x0e:
-	  printf("(%c-%s-%s)^2", tg, c2s(vr, constants, cpos+1).c_str(), c2s(vr, constants, cpos).c_str());
-	  break;
-
-	default:
-	  printf("#%x#", id);
-	  break;
-	}
-	cpos += 2;
+      char type = equation[pos++];
+      char t1   = equation[pos++];
+      char tg   = equation[pos++];
+      char t2   = equation[pos++];
+      printf("%c.%s.(", type, c2s(vr, constants, cpos++).c_str());
+      if(t1 == '.')
+	printf("%s, ", c2s(vr, constants, cpos++).c_str());
+      else
+	printf("%c, ", t1);
+      if(tg == '.')
+	printf("%s, ", c2s(vr, constants, cpos++).c_str());
+      else
+	printf("%c, ", tg);
+      if(t2 == '.')
+	printf("%s)\n", c2s(vr, constants, cpos++).c_str());
+      else
+	printf("%c)\n", t2);
+      if(pos != equation.size()) {
+	assert(equation[pos] == ' ');
+	pos++;
       }
-      pos++;
-      printf(" = 0\n");
     }
-    assert(pos == equation.size());
   }
 }
 
-void state_t::_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta__(const vector<int> &constants, vector<int> &level)
 {
+  // T.k0.(a, k1, k2)
+  int thr = constants[1] - ET;
+  if(level[0] < thr) {
+    if(thr > constants[2])
+      level[0] = thr;
+    else
+      level[0] = constants[2];
+  }
 }
 
-void state_t::__(const vector<int> &constants, vector<int> &level)
+void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
 {
+  // T.k0.(a, k1, b)
+  assert(level[0] == level[1]);
 }
 
-void state_t::___(const vector<int> &constants, vector<int> &level)
+void state_t::Daa_(const vector<int> &constants, vector<int> &level)
 {
-}
-
-void state_t::____(const vector<int> &constants, vector<int> &level)
-{
-}
-
-void state_t::_____(const vector<int> &constants, vector<int> &level)
-{
-}
-
-void state_t::______(const vector<int> &constants, vector<int> &level)
-{
-}
-
-void state_t::mSa___(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k1-a)^2 = 0
+  // D.k0.(a, a, k1)
   level[0] = constants[1];
-}
-
-void state_t::mSa____(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k1-a)^2 = 0
-  level[0] = constants[1];
-}
-
-void state_t::mSa______(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k1-a)^2 = 0
-  level[0] = constants[1];
-}
-
-void state_t::_mSb___(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k1-a)^2 = 0
-  level[1] = constants[1];
-}
-
-void state_t::mSaa___(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(a-k2-a [k1])^2 = 0
-  // special case, limit to the other side power level since saturation is going to switch to linear
-  level[0] = constants[1];
-}
-
-void state_t::_mSbb__(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(b-k2-b [k1])^2 = 0
-  // special case, limit to the other side power level since saturation is going to switch to linear
-  level[1] = constants[1];
-}
-
-void state_t::mSa___pSa___(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k2-a)^2 = 0
-  // + k3*(k5-a)^2 = 0
-  assert(constants[2] == constants[5]);
-  level[0] = constants[2];
-}
-
-void state_t::pSb___mSb___(const vector<int> &constants, vector<int> &level)
-{
-  // + k0*(k2-b)^2 = 0
-  // - k3*(k5-b)^2 = 0
-  assert(constants[2] == constants[5]);
-  level[0] = constants[2];
-}
-
-void state_t::pS_a_mSa__pSba__mSba__(const vector<int> &constants, vector<int> &level)
-{
-  // + k0*(a-k2-k1)^2 - k3*(k5-a)^2 + k6*(a-k8-b [k7])^2 = 0
-  // - k9*(a-k11-b [k10])^2 = 0
-  assert(constants[8] == constants[11]);
-
-  /*
-    k0.(a-kx)^2 - k3.(a-k5)^2 = 0
-    (k0-k3).a^2 + 2.(k3.k5 - k0.kx).a +k0.kx^2-k3.k5^2 = 0
-    A = k0-k3
-    B = 2.(k3.k5-k0.kx)
-    C = k0.kx^2 - k3.k5^2
-    d = (k3.k5-k0.kx)^2 - (k0-k3).(k0.kx^2-k3.k5^2)
-      = k3^2.k5^2 - 2.k3.k5.k0.kx + k0^2.kx^2 - k0^2.kx^2 + k0.k3.k5^2 + k0.k3.kx^2 - k3^2.k5^2
-      = 2.k3.k5.k0.kx + k0.k3.k5^2 + k0.k3.kx^2
-      = k0.k3.(2.k5.kx + k5^2 + kx^2)
-      = k0.k3.(k5+kx)^2
-    sqrt(d) = sqrt(k0.k3)*(k5+kx)
-    a = (k0.kx-k3.k5 - sqrt(k0.k3)(k5+kx))/(k0-k3)
-  */
-  int kx = constants[1] - constants[2];
-  level[0] = int((constants[0]*kx - constants[3]*constants[5] - (constants[5]+kx)*sqrt(constants[0]*constants[3]))/(constants[0] - constants[3])+0.5);
-  level[1] = level[0] - constants[8];
-}
-
-void state_t::pS_a_pSba__mSba__(const vector<int> &constants, vector<int> &level)
-{
-  // + k0*(a-k2-k1)^2 + k3*(a-k5-b [k4])^2 = 0
-  // - k6*(a-k8-b [k7])^2 = 0
-  assert(constants[5] == constants[8]);
-  level[0] = constants[1] + constants[2];
-  level[1] = level[0] - constants[5];
-}
-
-void state_t::mLaa_pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(a-k1)*(2*(a-k2)-a-k1) + k3*(b-a)*(2*k4-b-a) = 0
-  // - k5*(b-a)*(2*k6-b-a) = 0
-  level[0] = level[1] = constants[1];
-}
-
-void state_t::mSa__pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level)
-{
-  // - k0*(k1-a)^2 + k2*(b-a)*(2*k3-b-a) = 0
-  // - k4*(b-a)*(2*k5-b-a) = 0
-  level[0] = level[1] = constants[1];
 }
 
 void state_t::register_solvers()
 {
-  solvers[";"]                      = _;
-  solvers[";;"]                     = __;
-  solvers[";;;"]                    = ___;
-  solvers[";;;;"]                   = ____;
-  solvers[";;;;;"]                  = _____;
-  solvers[";;;;;;"]                 = ______;
-  solvers["-Sa..;"]                 = mSa___;
-  solvers["-Sa..;;"]                = mSa____;
-  solvers["-Sa..;;;;"]              = mSa______;
-  solvers[";-Sb..;"]                = _mSb___;
-  solvers["-Saa.;;"]                = mSaa___;
-  solvers[";-Sbb.;"]                = _mSbb__;
-  solvers["-Sa..;+Sa..;"]           = mSa___pSa___;
-  solvers["+Sb..;-Sb..;"]           = pSb___mSb___;
-  solvers["+S.a.+Sba.;-Sba.;"]      = pS_a_pSba__mSba__;
-  solvers["-Laa.+Lb.a;-Lb.a;"]      = mLaa_pLb_a_mLb_a_;
-  solvers["-Sa..+Lb.a;-Lb.a;"]      = mSa__pLb_a_mLb_a_;
-  solvers["+S.a.-Sa..+Sba.;-Sba.;"] = pS_a_mSa__pSba__mSba__;
+  solvers["Ta.."]                   = Ta__;
+  solvers["Ta.b"]                   = Ta_b;
+  solvers["Daa."]                   = Daa_;
 }

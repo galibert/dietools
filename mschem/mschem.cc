@@ -2235,6 +2235,8 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
   unsigned int nno = nodes.size();
   unsigned int nne = nets.size();
   int id = 0;
+  unsigned int limx = int(state->info.sx / ratio)*10/PATCH_SX;
+  unsigned int limy = int(state->info.sy / ratio)*10/PATCH_SY;
   for(unsigned int i=0; i<16384; i++) {
     unsigned int x0 = 0, y0 = 0;
     for(unsigned int j=0; j<8; j++) {
@@ -2243,19 +2245,19 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
       if(i & (2 << (2*j)))
 	y0 |= 1 << j;
     }
-    if(x0 > 104 || y0 > 91)
+    if(x0 > limx || y0 > limy)
       continue;
 
     int ox = x0 * PATCH_SX;
-    int oy = y0 * PATCH_SX;
+    int oy = y0 * PATCH_SY;
 
     for(unsigned int j=0; j != nno; j++)
       nodes[j]->draw(levels[0], ox, oy);
     for(unsigned int j=0; j != nne; j++)
       nets[j]->draw(levels[0], ox, oy);
 
-    bool last_x = x0 == 104;
-    bool last_y = y0 == 91;
+    bool last_x = x0 == limx;
+    bool last_y = y0 == limy;
     unsigned int x1 = x0;
     unsigned int y1 = y0;
     for(int level = 1; level < 8; level++) {
@@ -2277,7 +2279,7 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
       x1 = x1 >> 1;
       y1 = y1 >> 1;
     }      
-    tick(tinfo, id++, 105*92);
+    tick(tinfo, id++, (limx+1)*(limy+1));
   }
   delete[] levels;
 }
@@ -3375,7 +3377,6 @@ int main(int argc, char **argv)
 
   freetype_init();
 
-
   lua_fun(argv[1], nodes, nets);
 
   build_net_links(nets);
@@ -3396,7 +3397,7 @@ int main(int argc, char **argv)
   if(opt_tiles) {
     char buf[4096];
     sprintf(buf, "%s/%%d/y%%03d_x%%03d.png", opt_tiles);
-    draw(opt_tiles, nodes, nets);
+    draw(buf, nodes, nets);
   }
 
   return 0;

@@ -91,30 +91,20 @@ public:
   state_t();
 
 private:
+  enum {
+    ET = 7,
+    ED = -30
+  };
+
   void add_transistor(node *tr, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
   void add_net(int nid, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
   void dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve);
   string c2s(int vr, const vector<int> &constants, int pos);
   void build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const;
 
-  static void _(const vector<int> &constants, vector<int> &level);
-  static void __(const vector<int> &constants, vector<int> &level);
-  static void ___(const vector<int> &constants, vector<int> &level);
-  static void ____(const vector<int> &constants, vector<int> &level);
-  static void _____(const vector<int> &constants, vector<int> &level);
-  static void ______(const vector<int> &constants, vector<int> &level);
-  static void mSa___(const vector<int> &constants, vector<int> &level);
-  static void mSa____(const vector<int> &constants, vector<int> &level);
-  static void mSa______(const vector<int> &constants, vector<int> &level);
-  static void _mSb___(const vector<int> &constants, vector<int> &level);
-  static void mSaa___(const vector<int> &constants, vector<int> &level);
-  static void _mSbb__(const vector<int> &constants, vector<int> &level);
-  static void mSa___pSa___(const vector<int> &constants, vector<int> &level);
-  static void pSb___mSb___(const vector<int> &constants, vector<int> &level);
-  static void pS_a_pSba__mSba__(const vector<int> &constants, vector<int> &level);
-  static void mLaa_pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level);
-  static void mSa__pLb_a_mLb_a_(const vector<int> &constants, vector<int> &level);
-  static void pS_a_mSa__pSba__mSba__(const vector<int> &constants, vector<int> &level);
+  static void Ta__(const vector<int> &constants, vector<int> &level);
+  static void Ta_b(const vector<int> &constants, vector<int> &level);
+  static void Daa_(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();

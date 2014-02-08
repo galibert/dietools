@@ -7,9 +7,10 @@
 
 SVDisplay::SVDisplay(QWidget *parent) : QWidget(parent)
 {
-  xc = -1;
-  yc = -1;
-  z = 32;
+  xc = state.sx*5;
+  yc = state.sy*5;
+  z = 64;
+  starting = true;
   qimg = 0;
   generated_image = NULL;
   ids_image = NULL;
@@ -200,6 +201,11 @@ void SVDisplay::rewamp_image()
 
 void SVDisplay::resizeEvent(QResizeEvent *e)
 {
+  if(starting) {
+    svmain->set_scroll_pos_range(xc, yc, state.sx*10, state.sy*10);
+    starting = false;
+  }
+
   if(qimg) {
     delete qimg;
     delete[] generated_image;
@@ -246,7 +252,7 @@ void SVDisplay::mouseMoveEvent(QMouseEvent *e)
     ids += w;
   }
   char msg[4096];
-  char *p = msg + sprintf(msg, "%5d %5d %s", (x0+x)/10, 4666-(y0+y)/10, id_to_name(id).c_str());
+  char *p = msg + sprintf(msg, "%5d %5d %s", (x0+x)/10, state.sy-(y0+y)/10, id_to_name(id).c_str());
   if((id & node::TYPE_MASK) == node::NET_MARK) {
     int pp = state.power[id & node::ID_MASK];
     p += sprintf(p, " %d.%dV", pp/10, pp%10);
@@ -288,7 +294,9 @@ void SVDisplay::mousePressEvent(QMouseEvent *e)
 
 void SVDisplay::hscroll(int pos)
 {
-  xc = pos*10;
+  if(starting)
+    return;
+  xc = pos;
   x0 = xc - z*size().width()/2;
   generate_ids();
   update();
@@ -296,7 +304,9 @@ void SVDisplay::hscroll(int pos)
 
 void SVDisplay::vscroll(int pos)
 {
-  yc = pos*10;
+  if(starting)
+    return;
+  yc = pos;
   y0 = yc - z*size().height()/2;
   generate_ids();
   update();
@@ -323,12 +333,6 @@ void SVDisplay::zoom_out()
 void SVDisplay::reload()
 {
   state_load(schem_file);
-  if(xc == -1 && yc == -1) {
-    xc = state.sx*5;
-    yc = state.sy*5;
-    svmain->set_scroll_pos_range(xc, yc, state.sx*10, state.sy*10);
-  }
-
   generate_ids();
   update();
 }

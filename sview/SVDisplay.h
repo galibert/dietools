@@ -38,6 +38,7 @@ private:
   unsigned int *ids_image;
   QImage *qimg;
   int xc, yc, x0, y0, z;
+  bool starting;
 
   void generate_image();
   void generate_ids();
