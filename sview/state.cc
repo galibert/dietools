@@ -981,7 +981,7 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
   printf("  fct: ");
   for(unsigned int i=0; i != equation.length(); i++) {
     char c = equation[i];
-    if(c == ';' || c == '.')
+    if(c == ' ' || c == '.')
       c = '_';
     else if(c == '+')
       c = 'p';
@@ -1044,7 +1044,23 @@ void state_t::Ta__(const vector<int> &constants, vector<int> &level)
 void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
 {
   // T.k0.(a, k1, b)
-  assert(level[0] == level[1]);
+  if(level[0] == level[1])
+    return;
+  int lim = constants[1] - ET;
+  if(level[0] >= lim && level[1] >= lim)
+    return;
+  int mid = (level[0] + level[1])/2;
+  if(mid <= lim) {
+    level[0] = level[1] = mid;
+    return;
+  }
+  if(level[0] > lim) {
+    level[0] -= lim - level[1];
+    level[1] = lim;
+  } else {
+    level[1] -= lim - level[0];
+    level[0] = lim;
+  }
 }
 
 void state_t::Daa_(const vector<int> &constants, vector<int> &level)
@@ -1053,9 +1069,27 @@ void state_t::Daa_(const vector<int> &constants, vector<int> &level)
   level[0] = constants[1];
 }
 
+void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(a, a, k1)
+  // T.k2.(a, k3, b)
+  level[0] = constants[1];
+  if(level[1] < constants[1] - ET)
+    level[1] = constants[1] - ET;
+}
+
+void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // D.k3.(a, a, k4)
+  
+}
+
 void state_t::register_solvers()
 {
   solvers["Ta.."]                   = Ta__;
   solvers["Ta.b"]                   = Ta_b;
   solvers["Daa."]                   = Daa_;
+  solvers["Daa. Ta.b"]              = Daa__Ta_b;
+  solvers["Ta.. Daa."]              = Ta___Daa_;
 }

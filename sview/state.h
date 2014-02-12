@@ -105,6 +105,8 @@ private:
   static void Ta__(const vector<int> &constants, vector<int> &level);
   static void Ta_b(const vector<int> &constants, vector<int> &level);
   static void Daa_(const vector<int> &constants, vector<int> &level);
+  static void Daa__Ta_b(const vector<int> &constants, vector<int> &level);
+  static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();

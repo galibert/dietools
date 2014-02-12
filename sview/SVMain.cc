@@ -12,7 +12,6 @@ SVMain::SVMain(QWidget *parent) : QMainWindow(parent)
 
 void SVMain::set_scroll_pos_range(int xc, int yc, int xm, int ym)
 {
-  fprintf(stderr, "%d %d %d %d\n", xc, yc, xm, ym);
   hscroll->setValue(xc);
   vscroll->setValue(yc);
   hscroll->setMaximum(xm);
