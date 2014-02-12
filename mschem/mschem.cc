@@ -2294,7 +2294,7 @@ void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, co
     exit(1);
   }
 
-  fprintf(fd, "%d %d\n", sx, sy);
+  fprintf(fd, "%d %d %f\n", sx, sy, ratio);
 
   fprintf(fd, "%d nodes\n", int(nodes.size()));
   for(unsigned int i=0; i != nodes.size(); i++)

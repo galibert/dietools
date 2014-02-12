@@ -68,6 +68,7 @@ public:
 class state_t {
 public:
   int sx, sy;
+  double ratio;
 
   vector<bool> selectable_net;
   vector<bool> highlight;
@@ -98,7 +99,7 @@ private:
 
   void add_transistor(node *tr, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
   void add_net(int nid, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate);
-  void dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve);
+  void dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve, const set<node *> &accepted_trans);
   string c2s(int vr, const vector<int> &constants, int pos);
   void build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const;
 
@@ -106,7 +107,9 @@ private:
   static void Ta_b(const vector<int> &constants, vector<int> &level);
   static void Daa_(const vector<int> &constants, vector<int> &level);
   static void Daa__Ta_b(const vector<int> &constants, vector<int> &level);
+  static void Ta_b_Ta_c(const vector<int> &constants, vector<int> &level);
   static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta__(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();

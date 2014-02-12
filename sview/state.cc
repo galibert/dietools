@@ -426,6 +426,7 @@ void state_load(const char *fname)
   }
   state.sx = rd.gi();
   state.sy = rd.gi();
+  state.ratio = rd.gd();
   rd.nl();
 
   int nn = rd.gi();
@@ -832,7 +833,7 @@ void state_t::add_transistor(node *tr, vector<int> &nids, set<int> &nid_set, set
   add_net(tr->netids[node::T2], nids, nid_set, changed, accepted_trans, rejected_trans_per_gate);
 }
 
-void state_t::build_equation(string &equation, vector<int> &constants, const vector<int> & nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const
+void state_t::build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const
 {
   constants.clear();
   equation = "";
@@ -890,6 +891,7 @@ void state_t::apply_changed(set<int> changed)
 {
   int ctime = 0;
   map<int, map<int, int> > future_changes;
+  map<int, int> future_changes_times;
   while(!changed.empty()) {
     list<int> changed_through_gate;
     for(set<int>::const_iterator i = changed.begin(); i != changed.end(); i++)
@@ -901,6 +903,7 @@ void state_t::apply_changed(set<int> changed)
       changed.insert(*i);
 
     while(!changed.empty()) {
+      bool verb = false;
       vector<int> nids;
       set<int> nid_set;
       set<node *> accepted_trans;
@@ -931,6 +934,9 @@ void state_t::apply_changed(set<int> changed)
 	  nids_to_solve.push_back(*i);
 	}
       if(!nids_to_solve.empty() && !accepted_trans.empty()) {
+	if(nids_to_solve[0] == 20)
+	  verb = true;
+
 	map<int, int> nid_to_index;
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  nid_to_index[nids_to_solve[i]] = i;
@@ -944,23 +950,52 @@ void state_t::apply_changed(set<int> changed)
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
+	if(equation == "Ta.. Ta..")
+	  verb = true;
+
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
 	  printf("Unhandled equation system.\n");
-	  dump_equation_system(equation, constants, nids_to_solve);
+	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
 	  for(unsigned int i=0; i != nids_to_solve.size(); i++)
 	    highlight[nids_to_solve[i]] = true;
 	  return;
 	}
 
-	//	dump_equation_system(equation, constants, nids_to_solve);
+	if(verb)
+	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
 	sp->second(constants, levels);
-	if(0) {
+	if(verb) {
 	  printf("  levels:\n");
 	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	    printf("   %c: %d.%d\n", 'a'+i, levels[i]/10, levels[i]%10);
 	}
+
+	for(unsigned int i = 0; i != nids_to_solve.size(); i++) {
+	  int nid = nids_to_solve[i];
+	  if(levels[i] != power[nid]) {
+	    int ntime = ctime + delay[nid];
+	    map<int, int>::const_iterator j = future_changes_times.find(nid);
+	    if(j != future_changes_times.end())
+	      ntime = j->second;
+	    else
+	      future_changes_times[nid] = ntime;
+	    future_changes[ntime][nid] = levels[i];
+	  }
+	}
       }
+    }
+
+    if(!future_changes.empty()) {
+      ctime = future_changes.begin()->first;
+      const map<int, int> &mc = future_changes.begin()->second;
+      for(map<int, int>::const_iterator i = mc.begin(); i != mc.end(); i++) {
+	future_changes_times.erase(future_changes_times.find(i->first));
+	power[i->first] = i->second;
+	changed.insert(i->first);
+	//	printf("time %6d node %s (%d) = %d.%d\n", ctime, nodes[i->first]->name.c_str(), i->first, i->second/10, i->second%10);
+      }
+      future_changes.erase(future_changes.begin());
     }
   }
 }
@@ -975,7 +1010,7 @@ string state_t::c2s(int vr, const vector<int> &constants, int pos)
   return buf;
 }
 
-void state_t::dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve)
+void state_t::dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve, const set<node *> &accepted_trans)
 {
   printf("  key: %s\n", equation.c_str());
   printf("  fct: ");
@@ -997,6 +1032,7 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
   printf("\n");  
 
   for(int vr=0; vr<2; vr++) {
+    set<node *>::const_iterator aci = accepted_trans.begin();
     if(vr)
       printf("  mosfets k:\n");
     else
@@ -1018,9 +1054,16 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
       else
 	printf("%c, ", tg);
       if(t2 == '.')
-	printf("%s)\n", c2s(vr, constants, cpos++).c_str());
+	printf("%s)", c2s(vr, constants, cpos++).c_str());
       else
-	printf("%c)\n", t2);
+	printf("%c)", t2);
+      if(!vr) {
+	node *n = *aci++;
+	printf("  %d %d (%d %d)\n",
+	       n->x/10, state.sy - n->y/10, int(n->x/10*ratio+0.5), int((state.sy - n->y/10)*ratio+0.5));
+      } else
+	printf("\n");
+
       if(pos != equation.size()) {
 	assert(equation[pos] == ' ');
 	pos++;
@@ -1034,11 +1077,12 @@ void state_t::Ta__(const vector<int> &constants, vector<int> &level)
   // T.k0.(a, k1, k2)
   int thr = constants[1] - ET;
   if(level[0] < thr) {
-    if(thr > constants[2])
+    if(thr < constants[2])
       level[0] = thr;
     else
       level[0] = constants[2];
-  }
+  } else if(level[0] > constants[2] && constants[2] <= thr)
+    level[0] = constants[2];
 }
 
 void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
@@ -1078,12 +1122,49 @@ void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
     level[1] = constants[1] - ET;
 }
 
+void state_t::Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, b)
+  // T.k2.(a, k3, c)
+  if(level[0] == level[1] && level[1] == level[2])
+    return;
+  int lim1 = constants[1] - ET;
+  int lim3 = constants[3] - ET;
+  if(level[0] >= lim1 && level[0] >= lim3 && level[1] >= lim1 && level[2] >= lim3)
+    return;
+  abort();
+}
+
 void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, a, k4)
-  
+  int thr = constants[1] - ET;
+  double dt = sqrt(thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr));
+  level[0] = int(thr-dt+0.5);
+  assert(level[0] >= constants[2] && level[0] <= constants[4]);
+  assert(level[0] < constants[4] + ED);
 }
+
+void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+
+  if(constants[2] <= constants[1] - ET && constants[4] >= constants[5] - ET) {
+    // First transistor linear, second saturates
+    double thrl = constants[1] - ET;
+    double thrs = constants[4] - ET;
+    double a = constants[0] + constants[3];
+    double b = thrl*constants[0] + thrs*constants[3];
+    double c = constants[3]*thrs*thrs - constants[0]*constants[2]*(constants[2]-2*thrl);
+    double dt = sqrt(b*b-a*c);
+    double r =(b-dt)/a;
+    level[0] = int(r + 0.5);
+  } else
+    abort();
+}
+
 
 void state_t::register_solvers()
 {
@@ -1091,5 +1172,7 @@ void state_t::register_solvers()
   solvers["Ta.b"]                   = Ta_b;
   solvers["Daa."]                   = Daa_;
   solvers["Daa. Ta.b"]              = Daa__Ta_b;
+  solvers["Ta.b Ta.c"]              = Ta_b_Ta_c;
   solvers["Ta.. Daa."]              = Ta___Daa_;
+  solvers["Ta.. Ta.."]              = Ta___Ta__;
 }
