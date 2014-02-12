@@ -592,6 +592,7 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 	  break;
 
 	case BURIED:
+	  via_list_add(stack, via_maps.ap_to_metal, cid, circuit_infos);
 	  for(set<int>::const_iterator j = ci.neighbors.begin(); j != ci.neighbors.end(); j++) {
 	    if(circuit_infos[*j].type == ACTIVE || circuit_infos[*j].type == CAPACITOR)
 	      stack.push_back(*j);
