@@ -889,6 +889,8 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
 
 void state_t::apply_changed(set<int> changed)
 {
+  return;
+
   int ctime = 0;
   map<int, map<int, int> > future_changes;
   map<int, int> future_changes_times;
@@ -952,7 +954,6 @@ void state_t::apply_changed(set<int> changed)
 
 	if(equation == "Ta.. Ta..")
 	  verb = true;
-
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
 	  printf("Unhandled equation system.\n");

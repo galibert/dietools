@@ -955,7 +955,7 @@ int node::l_pos(lua_State *L)
 {
   node *n = static_cast<node *>(getparam_any(L, 1));
   lua_pushnumber(L, n->pos.x);
-  lua_pushnumber(L, (state->info.sy-1) / ratio - n->pos.y);
+  lua_pushnumber(L, sy1 - n->pos.y);
   return 2;
 }
 
@@ -2357,8 +2357,8 @@ void build_pads(const char *fname, vector<node *> &nodes, map<int, list<ref> > &
   for(unsigned int i=0; i != pp.pads.size(); i++) {
     const pinfo &pi = pp.pads[i];
     point p;
-    p.x = pi.x / ratio;
-    p.y = ((state->info.sy - 1) - pi.y) / ratio;
+    p.x = int(pi.x / ratio + 0.5);
+    p.y = int(((state->info.sy - 1) - pi.y) / ratio + 0.5);
     int orientation;
     switch(pi.orientation) {
     case 'n': orientation = N_S; break;
@@ -3278,7 +3278,7 @@ int l_setup(lua_State *L)
   state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3));
   ratio = lua_tonumber(L, 5);
 
-  sy1 = (state->info.sy - 1)/ratio;
+  sy1 = (state->info.sy-1)/ratio;
 
   map<int, list<ref> > nodemap;
 
