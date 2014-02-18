@@ -192,7 +192,7 @@ void SVDisplay::rewamp_image()
   int w = size().width();
   int h = size().height();
 
-  svmain->set_steps(z*10, z*10, z*w/20, z*h/20);
+  svmain->set_steps(z*10, z*10, z*w/2, z*h/2);
 
   x0 = xc - z*w/2;
   y0 = yc - z*h/2;
