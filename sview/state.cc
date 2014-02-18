@@ -889,8 +889,6 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
 
 void state_t::apply_changed(set<int> changed)
 {
-  return;
-
   int ctime = 0;
   map<int, map<int, int> > future_changes;
   map<int, int> future_changes_times;
@@ -952,7 +950,7 @@ void state_t::apply_changed(set<int> changed)
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
-	if(equation == "Ta.. Ta..")
+	if(equation == "Tbb. Taa. Ta.. Taab")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
@@ -1073,17 +1071,20 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
   }
 }
 
+
+void state_t::pull(int &term, int gate, int oterm)
+{
+  int thr = gate - ET;
+  if(term < thr)
+    term = oterm < thr ? oterm : thr;
+  else if(oterm < thr)
+    term = oterm;
+}
+
 void state_t::Ta__(const vector<int> &constants, vector<int> &level)
 {
   // T.k0.(a, k1, k2)
-  int thr = constants[1] - ET;
-  if(level[0] < thr) {
-    if(thr < constants[2])
-      level[0] = thr;
-    else
-      level[0] = constants[2];
-  } else if(level[0] > constants[2] && constants[2] <= thr)
-    level[0] = constants[2];
+  pull(level[0], constants[1], constants[2]);
 }
 
 void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
@@ -1119,8 +1120,31 @@ void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
   // D.k0.(a, a, k1)
   // T.k2.(a, k3, b)
   level[0] = constants[1];
-  if(level[1] < constants[1] - ET)
-    level[1] = constants[1] - ET;
+  pull(level[1], constants[3], level[0]);
+}
+
+void state_t::Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(b, b, k1)
+  // T.k2.(a, k3, b)
+  level[1] = constants[1];
+  pull(level[0], constants[3], level[1]);
+}
+
+void state_t::Ta___Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, b)
+  pull(level[0], constants[1], constants[2]);
+  pull(level[1], constants[4], level[0]);
+}
+
+void state_t::Tb___Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, k1, k2)
+  // T.k3.(a, k4, b)
+  pull(level[1], constants[1], constants[2]);
+  pull(level[0], constants[4], level[1]);
 }
 
 void state_t::Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
@@ -1173,6 +1197,9 @@ void state_t::register_solvers()
   solvers["Ta.b"]                   = Ta_b;
   solvers["Daa."]                   = Daa_;
   solvers["Daa. Ta.b"]              = Daa__Ta_b;
+  solvers["Dbb. Ta.b"]              = Dbb__Ta_b;
+  solvers["Ta.. Ta.b"]              = Ta___Ta_b;
+  solvers["Tb.. Ta.b"]              = Tb___Ta_b;
   solvers["Ta.b Ta.c"]              = Ta_b_Ta_c;
   solvers["Ta.. Daa."]              = Ta___Daa_;
   solvers["Ta.. Ta.."]              = Ta___Ta__;
