@@ -107,6 +107,11 @@ struct fill_coord {
   fill_coord(int _x, int _y) { x = _x; y = _y; }
 };
 
+struct metal_link_info {
+  int x1, y1, x2, y2;
+  int poly_id;
+};
+
 void fill_1(list<fill_coord> &fc, int x, int y, int sx, int sy, int color, boost::function<void(int, int)> set_pixel, boost::function<int(int, int)> read_color, boost::function<bool(int, int)> test_pixel)
 {
   if(test_pixel(x, y))
@@ -415,7 +420,7 @@ void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_m
   }  
 }
 
-void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, int &virtual_poly_id, circuit_map &cmap)
+void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, list<metal_link_info> &virtual_poly_id, circuit_map &cmap)
 {
   vector<int> remap;
   remap.resize(circuit_infos.size());
@@ -440,7 +445,8 @@ void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, int &vi
       }
   }
 
-  virtual_poly_id = remap[virtual_poly_id];
+  for(list<metal_link_info>::iterator i = virtual_poly_id.begin(); i != virtual_poly_id.end(); i++)
+    i->poly_id = remap[i->poly_id];
 
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
     circuit_info &ci = circuit_infos[i];
@@ -871,33 +877,32 @@ void dump(const char *fname, int sx, int sy, const vector<trans_info> &trans_inf
 }
 
 // Add a virtual poly circuit between the two vcc domains
-// 690,7630 - 690,6900
-int add_virtual_poly(vector<circuit_info> &circuit_infos)
+void add_virtual_poly(vector<circuit_info> &circuit_infos, metal_link_info &ml)
 {
   int id = circuit_infos.size();
   circuit_infos.resize(id+1);
   circuit_info &ci = circuit_infos[id];
   ci.type = POLY;
-  ci.surface = 7630-6900+1;
-  ci.x0 = 690;
-  ci.x1 = 690;
-  ci.y1 = 14000-1-6900;
-  ci.y0 = 14000-1-7630;
+  ci.surface = abs(ml.x2-ml.x1)+abs(ml.y2-ml.y1)+1;
+  ci.x0 = ml.x1;
+  ci.x1 = ml.x2;
+  ci.y1 = 14000-1-ml.y2;
+  ci.y0 = 14000-1-ml.y1;
   ci.net = -1;
-  return id;
+  ml.poly_id = id;
 }
 
 // Add a pair of virtual vias with the virtual poly
-void add_virtual_vias(vector<via_info> &via_infos, via_map &via_maps, int poly_id, const circuit_map &cmap)
+void add_virtual_vias(vector<via_info> &via_infos, via_map &via_maps, metal_link_info &ml, const circuit_map &cmap)
 {
-  int vcc1 = cmap.p(METAL, 690, cmap.sy-1-7630);
-  int vcc2 = cmap.p(METAL, 690, cmap.sy-1-6900);
-  via_infos.push_back(via_info(vcc1, poly_id));
-  via_infos.push_back(via_info(vcc2, poly_id));
-  via_maps.metal_to_ap[vcc1].push_back(poly_id);
-  via_maps.metal_to_ap[vcc2].push_back(poly_id);
-  via_maps.ap_to_metal[poly_id].push_back(vcc1);
-  via_maps.ap_to_metal[poly_id].push_back(vcc2);
+  int vcc1 = cmap.p(METAL, ml.x1, cmap.sy-1-ml.y1);
+  int vcc2 = cmap.p(METAL, ml.x2, cmap.sy-1-ml.y2);
+  via_infos.push_back(via_info(vcc1, ml.poly_id));
+  via_infos.push_back(via_info(vcc2, ml.poly_id));
+  via_maps.metal_to_ap[vcc1].push_back(ml.poly_id);
+  via_maps.metal_to_ap[vcc2].push_back(ml.poly_id);
+  via_maps.ap_to_metal[ml.poly_id].push_back(vcc1);
+  via_maps.ap_to_metal[ml.poly_id].push_back(vcc2);
 }
 
 int main(int argc, char **argv)
@@ -913,7 +918,8 @@ int main(int argc, char **argv)
   pbm *poly = NULL;
   pbm *vias = NULL;
   pbm *caps = NULL;
-  
+  list<metal_link_info> metal_links;
+
   reader rd(argv[1]);
   const char *map_name = rd.gw();
   const char *list_name = rd.gw();
@@ -924,7 +930,10 @@ int main(int argc, char **argv)
   while(!rd.eof()) {
     char buf[4096];
     string keyw = rd.gw();
+
     if(keyw == "nmos-poly-single-metal") {
+      rd.nl();
+
     } else if(keyw == "active") {
       sprintf(buf, "%s.pbm", rd.gwnl());
       rd.nl();
@@ -955,6 +964,16 @@ int main(int argc, char **argv)
       rd.nl();
       caps = new pbm(buf);
 
+    } else if(keyw == "metal-link") {
+      metal_link_info ml;
+      ml.x1 = rd.gi();
+      ml.y1 = rd.gi();
+      ml.x2 = rd.gi();
+      ml.y2 = rd.gi();
+      ml.poly_id = -1;
+      rd.nl();
+      metal_links.push_back(ml);
+
     } else {
       fprintf(stderr, "Unhandled keyword %s\n", keyw.c_str());
       exit(1);
@@ -972,7 +991,8 @@ int main(int argc, char **argv)
   time_info tinfo;
   tinfo.start("build circuits active/poly");
   build_circuits(tinfo, boost::bind(color_active_poly, _1, _2, active, poly, buried, caps), circuit_infos, &cmap, ACTIVE);
-  //  int virtual_poly_id = add_virtual_poly(circuit_infos);
+  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+    add_virtual_poly(circuit_infos, *i);
   circuit_stats(circuit_infos);
   tinfo.start("build circuits metal");
   build_circuits(tinfo, boost::bind(color_metal, _1, _2, metal), circuit_infos, &cmap, METAL);
@@ -983,13 +1003,12 @@ int main(int argc, char **argv)
   clean_and_remap(tinfo, circuit_infos, cmap);
   circuit_stats(circuit_infos);
   tinfo.start("compressing ids");
-  //  compress_ids(tinfo, circuit_infos, virtual_poly_id, cmap);
-  int zz = -2;
-  compress_ids(tinfo, circuit_infos, zz, cmap);
+  compress_ids(tinfo, circuit_infos, metal_links, cmap);
   circuit_stats(circuit_infos);
   tinfo.start("mapping vias");
   map_vias(tinfo, via_infos, via_maps, circuit_infos, vias, cmap);
-  //  add_virtual_vias(via_infos, via_maps, virtual_poly_id, cmap);
+  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+    add_virtual_vias(via_infos, via_maps, *i, cmap);
   fprintf(stderr, "  -> %d vias mapped\n", int(via_infos.size()));
   tinfo.start("building nets");
   build_nets(tinfo, net_infos, circuit_infos, via_maps, sx, sy);
