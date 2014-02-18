@@ -950,7 +950,7 @@ void state_t::apply_changed(set<int> changed)
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
-	if(equation == "Tbb. Taa. Ta.. Taab")
+	if(equation == "xTbb. Taa. Ta.. Taab")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
@@ -1115,6 +1115,17 @@ void state_t::Daa_(const vector<int> &constants, vector<int> &level)
   level[0] = constants[1];
 }
 
+
+void state_t::Da__(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(a, k1, k2)
+  int thr = constants[1] - ED;
+  if(thr > constants[2])
+    thr = constants[2];
+  if(level[0] < thr)
+    level[0] = thr;
+}
+
 void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
 {
   // D.k0.(a, a, k1)
@@ -1191,16 +1202,155 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
 }
 
 
+void state_t::Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, b, k1)
+  // T.k2.(a, a, k3)
+  // T.k4.(a, k5, k6)
+  // T.k7.(a, a, b)
+  // Expect all mosfets are saturated, a>b
+
+  double ratio = sqrt(double(constants[0])/constants[7]);
+  double ax1 = 1+ratio;
+  double ax3 = ratio*(ET-constants[1]);
+
+  double AA = ax1*ax1*(constants[4]-constants[2]) - constants[7]*(ax1-1)*(ax1-1);
+  double BB = constants[2]*ax1*(ax3+constants[3]) - constants[4]*ax1*(constants[5]-2*ET+ax3) + constants[7]*(ax1-1)*ax3;
+  double CC = -constants[2]*pow(ax3-constants[3], 2) + constants[4]*pow(constants[5]-2*ET+ax3, 2) - constants[7]*ax3*ax3;
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double rb = (-BB-dt)/AA;
+  double ra = ax1*rb-ax3+ET;
+
+  level[0] = int(ra+0.5);
+  level[1] = int(rb+0.5);
+}
+
+void state_t::Dbb__Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(b, b, k1)
+  // T.k2.(a, k3, b)
+  // T.k4.(b, k5, c)
+  level[1] = constants[1];
+  pull(level[0], constants[3], level[1]);
+  pull(level[2], constants[5], level[1]);
+}
+
+void state_t::Daa__Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(a, a, k1)
+  // T.k2.(a, k3, b)
+  // T.k4.(a, k5, c)
+  level[0] = constants[1];
+  pull(level[1], constants[3], level[0]);
+  pull(level[2], constants[5], level[0]);
+}
+
+void state_t::Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, b)
+  // T.k2.(b, k3, c)
+  if(level[0] == level[1] && level[1] == level[2])
+    return;
+  int lim1 = constants[1] - ET;
+  int lim3 = constants[3] - ET;
+  if(level[1] >= lim1 && level[1] >= lim3 && level[0] >= lim1 && level[2] >= lim3)
+    return;
+  abort();
+}
+
+void state_t::Ta___Dabb(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // D.k3.(a, b, b)
+  level[0] = constants[2] - ET;
+  level[1] = level[0];
+}
+
+void state_t::Tc___Dbb__Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(c, k1, k2)
+  // D.k3.(b, b, k4)
+  // T.k5.(a, k6, k7)
+  // T.k8.(b, a, c)
+  // T.k9.(a, a, b)
+  level[1] = constants[4];
+  level[2] = constants[2] - ET;
+  level[0] = constants[7] - ET;
+}
+
+void state_t::Dbb__Tc___Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(b, b, k1)
+  // T.k2.(c, k3, k4)
+  // T.k5.(a, k6, k7)
+  // T.k8.(b, a, c)
+  // T.k9.(a, a, b)
+  level[1] = constants[1];
+  level[2] = constants[4] - ET;
+  level[0] = constants[7] - ET;
+}
+
+void state_t::Ta___Dabb_Dacc_Dadd_Daee(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // D.k3.(a, b, b)
+  // D.k4.(a, c, c)
+  // D.k5.(a, d, d)
+  // D.k6.(a, e, e)
+  level[0] = constants[2] - ET;
+  level[1] = level[0];
+  level[2] = level[0];
+  level[3] = level[0];
+  level[4] = level[0];
+}
+
+void state_t::Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // D.k3.(a, b, b)
+  // D.k4.(a, c, c)
+  // D.k5.(a, d, d)
+  // D.k6.(a, e, e)
+  // D.k7.(a, f, f)
+  level[0] = constants[2] - ET;
+  level[1] = level[0];
+  level[2] = level[0];
+  level[3] = level[0];
+  level[4] = level[0];
+  level[5] = level[0];
+}
+
+void state_t::Daa__Taab(const vector<int> &constants, vector<int> &level)
+{
+  // D.k0.(a, a, k1)
+  // T.k2.(a, a, b)
+  level[0] = constants[1];
+  pull(level[1], level[0], level[0]);
+}
+
 void state_t::register_solvers()
 {
-  solvers["Ta.."]                   = Ta__;
-  solvers["Ta.b"]                   = Ta_b;
-  solvers["Daa."]                   = Daa_;
-  solvers["Daa. Ta.b"]              = Daa__Ta_b;
-  solvers["Dbb. Ta.b"]              = Dbb__Ta_b;
-  solvers["Ta.. Ta.b"]              = Ta___Ta_b;
-  solvers["Tb.. Ta.b"]              = Tb___Ta_b;
-  solvers["Ta.b Ta.c"]              = Ta_b_Ta_c;
-  solvers["Ta.. Daa."]              = Ta___Daa_;
-  solvers["Ta.. Ta.."]              = Ta___Ta__;
+  //  solvers[""]                              = ;
+  solvers["Ta.."]                          = Ta__;
+  solvers["Ta.b"]                          = Ta_b;
+  solvers["Da.."]                          = Da__;
+  solvers["Daa."]                          = Daa_;
+  solvers["Daa. Ta.b"]                     = Daa__Ta_b;
+  solvers["Dbb. Ta.b"]                     = Dbb__Ta_b;
+  solvers["Ta.. Ta.b"]                     = Ta___Ta_b;
+  solvers["Tb.. Ta.b"]                     = Tb___Ta_b;
+  solvers["Ta.b Ta.c"]                     = Ta_b_Ta_c;
+  solvers["Ta.. Daa."]                     = Ta___Daa_;
+  solvers["Ta.. Ta.."]                     = Ta___Ta__;
+  solvers["Tbb. Taa. Ta.. Taab"]           = Tbb__Taa__Ta___Taab;
+  solvers["Dbb. Ta.b Tb.c"]                = Dbb__Ta_b_Tb_c;
+  solvers["Daa. Ta.b Ta.c"]                = Daa__Ta_b_Ta_c;
+  solvers["Ta.b Tb.c"]                     = Ta_b_Tb_c;
+  solvers["Ta.. Dabb"]                     = Ta___Dabb;
+  solvers["Tc.. Dbb. Ta.. Tbac Taab"]      = Tc___Dbb__Ta___Tbac_Taab;
+  solvers["Dbb. Tc.. Ta.. Tbac Taab"]      = Dbb__Tc___Ta___Tbac_Taab;
+  solvers["Ta.. Dabb Dacc Dadd Daee"]      = Ta___Dabb_Dacc_Dadd_Daee;
+  solvers["Ta.. Dabb Dacc Dadd Daee Daff"] = Ta___Dabb_Dacc_Dadd_Daee_Daff;
+  solvers["Daa. Taab"]                     = Daa__Taab;
 }

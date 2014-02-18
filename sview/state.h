@@ -108,6 +108,7 @@ private:
   static void Ta__(const vector<int> &constants, vector<int> &level);
   static void Ta_b(const vector<int> &constants, vector<int> &level);
   static void Daa_(const vector<int> &constants, vector<int> &level);
+  static void Da__(const vector<int> &constants, vector<int> &level);
   static void Daa__Ta_b(const vector<int> &constants, vector<int> &level);
   static void Dbb__Ta_b(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta_b(const vector<int> &constants, vector<int> &level);
@@ -115,6 +116,16 @@ private:
   static void Ta_b_Ta_c(const vector<int> &constants, vector<int> &level);
   static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta__(const vector<int> &constants, vector<int> &level);
+  static void Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level);
+  static void Dbb__Ta_b_Tb_c(const vector<int> &constants, vector<int> &level);
+  static void Daa__Ta_b_Ta_c(const vector<int> &constants, vector<int> &level);
+  static void Ta_b_Tb_c(const vector<int> &constants, vector<int> &level);
+  static void Ta___Dabb(const vector<int> &constants, vector<int> &level);
+  static void Tc___Dbb__Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level);
+  static void Dbb__Tc___Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level);
+  static void Ta___Dabb_Dacc_Dadd_Daee(const vector<int> &constants, vector<int> &level);
+  static void Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector<int> &level);
+  static void Daa__Taab(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();
