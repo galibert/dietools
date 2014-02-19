@@ -126,6 +126,7 @@ private:
   static void Ta___Dabb_Dacc_Dadd_Daee(const vector<int> &constants, vector<int> &level);
   static void Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector<int> &level);
   static void Daa__Taab(const vector<int> &constants, vector<int> &level);
+  static void Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();

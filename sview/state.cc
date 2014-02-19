@@ -947,7 +947,7 @@ void state_t::apply_changed(set<int> changed)
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
-	if(equation == "xTbb. Taa. Ta.. Taab")
+	if(equation == "Ta.. Ta..")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
@@ -1184,7 +1184,7 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
 
-  if(constants[2] <= constants[1] - ET && constants[4] >= constants[5] - ET) {
+  if(constants[2] <= constants[1] - ET && constants[5] >= constants[4] - ET) {
     // First transistor linear, second saturates
     double thrl = constants[1] - ET;
     double thrs = constants[4] - ET;
@@ -1194,10 +1194,22 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
     double dt = sqrt(b*b-a*c);
     double r =(b-dt)/a;
     level[0] = int(r + 0.5);
-  } else
-    abort();
-}
 
+  } else if(constants[2] >= constants[1] - ET && constants[5] <= constants[4] - ET) {
+    // Second transistor linear, first saturates
+    double thrl = constants[4] - ET;
+    double thrs = constants[1] - ET;
+    double a = constants[3] + constants[0];
+    double b = thrl*constants[4] + thrs*constants[0];
+    double c = constants[0]*thrs*thrs - constants[3]*constants[5]*(constants[5]-2*thrl);
+    double dt = sqrt(b*b-a*c);
+    double r =(b-dt)/a;
+    level[0] = int(r + 0.5);
+  } else {
+    fprintf(stderr, "Ta___Ta__ %d %d %d | %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5]);
+    abort();
+  }
+}
 
 void state_t::Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level)
 {
@@ -1326,6 +1338,28 @@ void state_t::Daa__Taab(const vector<int> &constants, vector<int> &level)
   pull(level[1], level[0], level[0]);
 }
 
+void state_t::Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, b, k1)
+  // D.k2.(a, a, k3)
+  // T.k4.(a, a, b)
+
+  double ratio = sqrt(double(constants[0])/constants[4]);
+  double ax1 = 1+ratio;
+  double ax2 = ET-ratio*(ET+constants[1]);
+
+  double AA = -constants[2]*ax1*ax1 -constants[4]*pow(ax1-1, 2);
+  double BB = constants[2]*ax1*(-ax2 + constants[3] +ED) - constants[4]*(ax1-1)*(ax2-ET);
+  double CC = constants[2]*(-ax2+constants[3])*(ax2-constants[3]-2*ED) - constants[4]*pow(ax2-ET, 2);
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double rb = (-BB-dt)/AA;
+  double ra = ax1*rb+ax2;
+
+  level[0] = int(ra+0.5);
+  level[1] = int(rb+0.5);
+}
+
 void state_t::register_solvers()
 {
   //  solvers[""]                              = ;
@@ -1350,4 +1384,5 @@ void state_t::register_solvers()
   solvers["Ta.. Dabb Dacc Dadd Daee"]      = Ta___Dabb_Dacc_Dadd_Daee;
   solvers["Ta.. Dabb Dacc Dadd Daee Daff"] = Ta___Dabb_Dacc_Dadd_Daee_Daff;
   solvers["Daa. Taab"]                     = Daa__Taab;
+  solvers["Tbb. Daa. Taab"]                = Tbb__Daa__Taab;
 }
