@@ -934,9 +934,6 @@ void state_t::apply_changed(set<int> changed)
 	  nids_to_solve.push_back(*i);
 	}
       if(!nids_to_solve.empty() && !accepted_trans.empty()) {
-	if(nids_to_solve[0] == 20)
-	  verb = true;
-
 	map<int, int> nid_to_index;
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  nid_to_index[nids_to_solve[i]] = i;
