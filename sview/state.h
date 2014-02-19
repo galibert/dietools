@@ -104,6 +104,9 @@ private:
   void build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const;
 
   static void pull(int &term, int gate, int oterm);
+  static void minmax(int &minv, int &maxv, int value);
+  static string i2v(int id);
+  static int get_id(string equation, unsigned int &pos);
 
   static void Ta__(const vector<int> &constants, vector<int> &level);
   static void Ta_b(const vector<int> &constants, vector<int> &level);
@@ -114,8 +117,8 @@ private:
   static void Ta___Ta_b(const vector<int> &constants, vector<int> &level);
   static void Tb___Ta_b(const vector<int> &constants, vector<int> &level);
   static void Ta_b_Ta_c(const vector<int> &constants, vector<int> &level);
-  static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta__(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta___Ta_b(const vector<int> &constants, vector<int> &level);
   static void Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level);
   static void Dbb__Ta_b_Tb_c(const vector<int> &constants, vector<int> &level);
   static void Daa__Ta_b_Ta_c(const vector<int> &constants, vector<int> &level);
@@ -127,6 +130,12 @@ private:
   static void Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector<int> &level);
   static void Daa__Taab(const vector<int> &constants, vector<int> &level);
   static void Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level);
+  static void Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const vector<int> &constants, vector<int> &level);
+  static void Ta___Daa__Taab(const vector<int> &constants, vector<int> &level);
+  static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;
   void register_solvers();

@@ -13,6 +13,7 @@
 #include <map>
 #include <math.h>
 #include <reader.h>
+#include <limits.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -866,17 +867,17 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
 
     if(t2_id != -1 && (t1_id == -1 || t1_id > t2_id)) {
       // Invert t2 and t1
-      equation += char('a' + t2_id);
-      equation += gate_id == -1 ? '.' : char('a' + gate_id);
-      equation += t1_id == -1 ? '.' : char('a' + t1_id);
+      equation += i2v(t2_id);
+      equation += gate_id == -1 ? "." : i2v(gate_id);
+      equation += t1_id == -1 ? "." : i2v(t1_id);
       if(gate_id == -1)
 	constants.push_back(png);
       if(t1_id == -1)
 	constants.push_back(pnt1);
     } else {
-      equation += t1_id == -1 ? '.' : char('a' + t1_id);
-      equation += gate_id == -1 ? '.' : char('a' + gate_id);
-      equation += t2_id == -1 ? '.' : char('a' + t2_id);
+      equation += t1_id == -1 ? "." : i2v(t1_id);
+      equation += gate_id == -1 ? "." : i2v(gate_id);
+      equation += t2_id == -1 ? "." : i2v(t2_id);
       if(t1_id == -1)
 	constants.push_back(pnt1);
       if(gate_id == -1)
@@ -885,6 +886,28 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
 	constants.push_back(pnt2);
     }
   }
+}
+
+void state_t::minmax(int &minv, int &maxv, int value)
+{
+  if(value < minv)
+    minv = value;
+  if(value > maxv)
+    maxv = value;
+}
+
+string state_t::i2v(int id)
+{
+  char buf[32];
+  if(id < 26) {
+    buf[0] = 'a'+id;
+    buf[1] = 0;
+  } else if(id < 52) {
+    buf[0] = 'A'+(id-26);
+    buf[1] = 0;
+  } else
+    sprintf(buf, "<%d>", id-52);
+  return buf;
 }
 
 void state_t::apply_changed(set<int> changed)
@@ -919,7 +942,7 @@ void state_t::apply_changed(set<int> changed)
 	  int nt1 = tr->netids[node::T1];
 	  int nt2 = tr->netids[node::T2];
 	  int ng = tr->netids[node::GATE];
-	  int thr = power[ng] - (tr->type == node::T ? 7 : -30);
+	  int thr = power[ng] - (tr->type == node::T ? ET : ED);
 	  if(nid_set.find(ng) != nid_set.end() || thr-power[nt1] > 0 || thr-power[nt2] > 0)
 	    add_transistor(tr, nids, nid_set, changed, accepted_trans, rejected_trans_per_gate);
 	  else
@@ -934,6 +957,17 @@ void state_t::apply_changed(set<int> changed)
 	  nids_to_solve.push_back(*i);
 	}
       if(!nids_to_solve.empty() && !accepted_trans.empty()) {
+	int minv = INT_MAX, maxv = INT_MIN;
+	for(vector<int>::const_iterator i = term_to_trans[nid].begin(); i != term_to_trans[nid].end(); i++) {
+	  node *tr = nodes[*i];
+	  int nt1 = tr->netids[node::T1];
+	  int nt2 = tr->netids[node::T2];
+	  int ng = tr->netids[node::GATE];
+	  minmax(minv, maxv, power[nt1]);
+	  minmax(minv, maxv, power[nt2]);
+	  minmax(minv, maxv, power[ng]);
+	}
+
 	map<int, int> nid_to_index;
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  nid_to_index[nids_to_solve[i]] = i;
@@ -947,7 +981,7 @@ void state_t::apply_changed(set<int> changed)
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 
-	if(equation == "Ta.. Ta..")
+	if(equation == "xTa.. Ta.. Daa.")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
@@ -955,7 +989,7 @@ void state_t::apply_changed(set<int> changed)
 	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
 	  for(unsigned int i=0; i != nids_to_solve.size(); i++)
 	    highlight[nids_to_solve[i]] = true;
-	  return;
+	  continue;
 	}
 
 	if(verb)
@@ -964,7 +998,21 @@ void state_t::apply_changed(set<int> changed)
 	if(verb) {
 	  printf("  levels:\n");
 	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
-	    printf("   %c: %d.%d\n", 'a'+i, levels[i]/10, levels[i]%10);
+	    printf("   %s: %d.%d\n", i2v(i).c_str(), levels[i]/10, levels[i]%10);
+	}
+
+	bool out_of_range = false;
+	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
+	  if(levels[i] < minv || levels[i] > maxv)
+	    out_of_range = true;
+
+	if(out_of_range) {
+	  printf("Out of range %d.%d %d.%d\n", minv/10, minv%10, maxv/10, maxv%10);
+	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
+	  printf("  levels:\n");
+	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
+	    printf("   %s: %d.%d\n", i2v(i).c_str(), levels[i]/10, levels[i]%10);
+	  exit(1);
 	}
 
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++) {
@@ -1006,13 +1054,32 @@ string state_t::c2s(int vr, const vector<int> &constants, int pos)
   return buf;
 }
 
+int state_t::get_id(string equation, unsigned int &pos)
+{
+  char c = equation[pos++];
+  if(c == '.')
+    return -1;
+  if(c >= 'a' && c <= 'z')
+    return c-'a';
+  if(c >= 'A' && c <= 'Z')
+    return c-'A'+26;
+  if(c != '<')
+    fprintf(stderr, "[%s] %d %c\n", equation.c_str(), pos-1, c);
+  assert(c == '<');
+  string r;
+  while(equation[pos] != '>')
+    r = r + equation[pos++];
+  pos++;
+  return strtol(r.c_str()+52, 0, 10);
+}
+
 void state_t::dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve, const set<node *> &accepted_trans)
 {
   printf("  key: %s\n", equation.c_str());
   printf("  fct: ");
   for(unsigned int i=0; i != equation.length(); i++) {
     char c = equation[i];
-    if(c == ' ' || c == '.')
+    if(c == ' ' || c == '.' || c == '<' || c == '>')
       c = '_';
     else if(c == '+')
       c = 'p';
@@ -1037,22 +1104,22 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
     while(pos != equation.size()) {
       printf("   ");
       char type = equation[pos++];
-      char t1   = equation[pos++];
-      char tg   = equation[pos++];
-      char t2   = equation[pos++];
+      int  t1   = get_id(equation, pos);
+      int  tg   = get_id(equation, pos);
+      int  t2   = get_id(equation, pos);
       printf("%c.%s.(", type, c2s(vr, constants, cpos++).c_str());
-      if(t1 == '.')
+      if(t1 == -1)
 	printf("%s, ", c2s(vr, constants, cpos++).c_str());
       else
-	printf("%c, ", t1);
-      if(tg == '.')
+	printf("%s, ", i2v(t1).c_str());
+      if(tg == -1)
 	printf("%s, ", c2s(vr, constants, cpos++).c_str());
       else
-	printf("%c, ", tg);
-      if(t2 == '.')
+	printf("%s, ", i2v(tg).c_str());
+      if(t2 == -1)
 	printf("%s)", c2s(vr, constants, cpos++).c_str());
       else
-	printf("%c)", t2);
+	printf("%s)", i2v(t2).c_str());
       if(!vr) {
 	node *n = *aci++;
 	printf("  %d %d (%d %d)\n",
@@ -1200,15 +1267,51 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
     double thrl = constants[4] - ET;
     double thrs = constants[1] - ET;
     double a = constants[3] + constants[0];
-    double b = thrl*constants[4] + thrs*constants[0];
+    double b = thrl*constants[3] + thrs*constants[0];
     double c = constants[0]*thrs*thrs - constants[3]*constants[5]*(constants[5]-2*thrl);
     double dt = sqrt(b*b-a*c);
     double r =(b-dt)/a;
     level[0] = int(r + 0.5);
+
   } else {
     fprintf(stderr, "Ta___Ta__ %d %d %d | %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5]);
     abort();
   }
+}
+
+void state_t::Ta___Ta___Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+  // T.k6.(a, k7, b)
+
+  if(constants[2] <= constants[1] - ET && constants[5] >= constants[4] - ET) {
+    // First transistor linear, second saturates
+    double thrl = constants[1] - ET;
+    double thrs = constants[4] - ET;
+    double a = constants[0] + constants[3];
+    double b = thrl*constants[0] + thrs*constants[3];
+    double c = constants[3]*thrs*thrs - constants[0]*constants[2]*(constants[2]-2*thrl);
+    double dt = sqrt(b*b-a*c);
+    double r =(b-dt)/a;
+    level[0] = int(r + 0.5);
+
+  } else if(constants[2] >= constants[1] - ET && constants[5] <= constants[4] - ET) {
+    // Second transistor linear, first saturates
+    double thrl = constants[4] - ET;
+    double thrs = constants[1] - ET;
+    double a = constants[3] + constants[0];
+    double b = thrl*constants[3] + thrs*constants[0];
+    double c = constants[0]*thrs*thrs - constants[3]*constants[5]*(constants[5]-2*thrl);
+    double dt = sqrt(b*b-a*c);
+    double r =(b-dt)/a;
+    level[0] = int(r + 0.5);
+
+  } else {
+    fprintf(stderr, "Ta___Ta___Ta_b %d %d %d | %d %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5], constants[6]);
+    abort();
+  }
+  pull(level[1], constants[6], level[0]);
 }
 
 void state_t::Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level)
@@ -1360,29 +1463,141 @@ void state_t::Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level)
   level[1] = int(rb+0.5);
 }
 
+void state_t::Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+  // D.k6.(a, a, k7)
+
+  double AA = constants[0]+constants[3];
+  double BB = constants[0]*(constants[1]+constants[2]-ET)+constants[3]*(constants[4]+constants[5]-ET);
+  double CC = constants[0]*constants[2]*(2*(constants[1]-ET)-constants[2]) + constants[3]*constants[5]*(2*(constants[4]-ET)-constants[5]) + constants[6]*ED*ED;
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double ra = (BB-dt)/AA;
+  level[0] = int(ra*10+0.5);
+}
+
+void state_t::Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, k1, k2)
+  // T.k3.(c, k4, k5)
+  // T.k6.(e, k7, k8)
+  // T.k9.(a, k10, b)
+  // T.k11.(a, k12, c)
+  // T.k13.(a, k14, d)
+  // T.k15.(a, k16, e)
+  // T.k17.(a, k18, f)
+  assert(constants[2] == 0 && constants[5] == 0 && constants[8] == 0);
+  level[1] = 0;
+  level[2] = 0;
+  level[4] = 0;
+  level[0] = 0;
+  level[3] = 0;
+  level[5] = 0;
+}
+
+void state_t::Ta___Daa__Taab(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // D.k3.(a, a, k4)
+  // T.k5.(a, a, b)
+
+  int thr = constants[1] - ET;
+  double dt = sqrt(thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr));
+  level[0] = int(thr-dt+0.5);
+  assert(level[0] >= constants[2] && level[0] <= constants[4]);
+  assert(level[0] < constants[4] + ED);
+  pull(level[1], level[0], level[0]);
+}
+
+void state_t::Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+  // T.k6.(a, k7, k8)
+  // D.k9.(a, a, k10)
+
+  double AA = constants[0]+constants[3]+constants[6];
+  double BB =
+    constants[ 0]*(constants[ 1]+constants[ 2]-ET)+
+    constants[ 3]*(constants[ 4]+constants[ 5]-ET)+
+    constants[ 6]*(constants[ 7]+constants[ 8]-ET);
+  double CC =
+    constants[ 0]*constants[ 2]*(2*(constants[ 1]-ET)-constants[ 2])+
+    constants[ 3]*constants[ 5]*(2*(constants[ 4]-ET)-constants[ 5])+
+    constants[ 6]*constants[ 8]*(2*(constants[ 7]-ET)-constants[ 8])+
+    constants[ 9]*ED*ED;
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double ra = (BB-dt)/AA;
+  level[0] = int(ra*10+0.5);
+}
+
+void state_t::Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+  // T.k6.(a, k7, k8)
+  // T.k9.(a, k10, k11)
+  // T.k12.(a, k13, k14)
+  // T.k15.(a, k16, k17)
+  // T.k18.(a, k19, k20)
+  // D.k21.(a, a, k22)
+
+  double AA = constants[0]+constants[3]+constants[6]+constants[9]+constants[12]+constants[15]+constants[18];
+  double BB =
+    constants[ 0]*(constants[ 1]+constants[ 2]-ET)+
+    constants[ 3]*(constants[ 4]+constants[ 5]-ET)+
+    constants[ 6]*(constants[ 7]+constants[ 8]-ET)+
+    constants[ 9]*(constants[10]+constants[11]-ET)+
+    constants[12]*(constants[13]+constants[14]-ET)+
+    constants[15]*(constants[16]+constants[17]-ET)+
+    constants[18]*(constants[19]+constants[20]-ET);
+  double CC =
+    constants[ 0]*constants[ 2]*(2*(constants[ 1]-ET)-constants[ 2])+
+    constants[ 3]*constants[ 5]*(2*(constants[ 4]-ET)-constants[ 5])+
+    constants[ 6]*constants[ 8]*(2*(constants[ 7]-ET)-constants[ 8])+
+    constants[ 9]*constants[11]*(2*(constants[10]-ET)-constants[11])+
+    constants[12]*constants[14]*(2*(constants[13]-ET)-constants[14])+
+    constants[15]*constants[17]*(2*(constants[16]-ET)-constants[17])+
+    constants[18]*constants[20]*(2*(constants[19]-ET)-constants[20])+
+    constants[21]*ED*ED;
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double ra = (BB-dt)/AA;
+  level[0] = int(ra*10+0.5);
+}
+
 void state_t::register_solvers()
 {
-  //  solvers[""]                              = ;
-  solvers["Ta.."]                          = Ta__;
-  solvers["Ta.b"]                          = Ta_b;
-  solvers["Da.."]                          = Da__;
-  solvers["Daa."]                          = Daa_;
-  solvers["Daa. Ta.b"]                     = Daa__Ta_b;
-  solvers["Dbb. Ta.b"]                     = Dbb__Ta_b;
-  solvers["Ta.. Ta.b"]                     = Ta___Ta_b;
-  solvers["Tb.. Ta.b"]                     = Tb___Ta_b;
-  solvers["Ta.b Ta.c"]                     = Ta_b_Ta_c;
-  solvers["Ta.. Daa."]                     = Ta___Daa_;
-  solvers["Ta.. Ta.."]                     = Ta___Ta__;
-  solvers["Tbb. Taa. Ta.. Taab"]           = Tbb__Taa__Ta___Taab;
-  solvers["Dbb. Ta.b Tb.c"]                = Dbb__Ta_b_Tb_c;
-  solvers["Daa. Ta.b Ta.c"]                = Daa__Ta_b_Ta_c;
-  solvers["Ta.b Tb.c"]                     = Ta_b_Tb_c;
-  solvers["Ta.. Dabb"]                     = Ta___Dabb;
-  solvers["Tc.. Dbb. Ta.. Tbac Taab"]      = Tc___Dbb__Ta___Tbac_Taab;
-  solvers["Dbb. Tc.. Ta.. Tbac Taab"]      = Dbb__Tc___Ta___Tbac_Taab;
-  solvers["Ta.. Dabb Dacc Dadd Daee"]      = Ta___Dabb_Dacc_Dadd_Daee;
-  solvers["Ta.. Dabb Dacc Dadd Daee Daff"] = Ta___Dabb_Dacc_Dadd_Daee_Daff;
-  solvers["Daa. Taab"]                     = Daa__Taab;
-  solvers["Tbb. Daa. Taab"]                = Tbb__Daa__Taab;
+  //  solvers[""]                                        = ;
+  solvers["Ta.."]                                    = Ta__;
+  solvers["Ta.b"]                                    = Ta_b;
+  solvers["Da.."]                                    = Da__;
+  solvers["Daa."]                                    = Daa_;
+  solvers["Daa. Ta.b"]                               = Daa__Ta_b;
+  solvers["Dbb. Ta.b"]                               = Dbb__Ta_b;
+  solvers["Ta.. Ta.b"]                               = Ta___Ta_b;
+  solvers["Tb.. Ta.b"]                               = Tb___Ta_b;
+  solvers["Ta.b Ta.c"]                               = Ta_b_Ta_c;
+  solvers["Ta.. Ta.."]                               = Ta___Ta__;
+  solvers["Ta.. Ta.. Ta.b"]                          = Ta___Ta___Ta_b;
+  solvers["Tbb. Taa. Ta.. Taab"]                     = Tbb__Taa__Ta___Taab;
+  solvers["Dbb. Ta.b Tb.c"]                          = Dbb__Ta_b_Tb_c;
+  solvers["Daa. Ta.b Ta.c"]                          = Daa__Ta_b_Ta_c;
+  solvers["Ta.b Tb.c"]                               = Ta_b_Tb_c;
+  solvers["Ta.. Dabb"]                               = Ta___Dabb;
+  solvers["Tc.. Dbb. Ta.. Tbac Taab"]                = Tc___Dbb__Ta___Tbac_Taab;
+  solvers["Dbb. Tc.. Ta.. Tbac Taab"]                = Dbb__Tc___Ta___Tbac_Taab;
+  solvers["Ta.. Dabb Dacc Dadd Daee"]                = Ta___Dabb_Dacc_Dadd_Daee;
+  solvers["Ta.. Dabb Dacc Dadd Daee Daff"]           = Ta___Dabb_Dacc_Dadd_Daee_Daff;
+  solvers["Daa. Taab"]                               = Daa__Taab;
+  solvers["Tbb. Daa. Taab"]                          = Tbb__Daa__Taab;
+  solvers["Tb.. Tc.. Te.. Ta.b Ta.c Ta.d Ta.e Ta.f"] = Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f;
+  solvers["Ta.. Daa. Taab"]                          = Ta___Daa__Taab;
+  solvers["Ta.. Daa."]                               = Ta___Daa_;
+  solvers["Ta.. Ta.. Daa."]                          = Ta___Ta___Daa_;
+  solvers["Ta.. Ta.. Ta.. Daa."]                     = Ta___Ta___Ta___Daa_;
+  solvers["Ta.. Ta.. Ta.. Ta.. Ta.. Ta.. Ta.. Daa."] = Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_;
 }
