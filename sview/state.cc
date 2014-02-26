@@ -1273,6 +1273,9 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
     double r =(b-dt)/a;
     level[0] = int(r + 0.5);
 
+  } else if(constants[2] <= constants[1] - ET && constants[5] <= constants[4] - ET && constants[2] == constants[5]) {
+    level[0] = constants[2];
+
   } else {
     fprintf(stderr, "Ta___Ta__ %d %d %d | %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5]);
     abort();
