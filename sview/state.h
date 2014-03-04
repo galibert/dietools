@@ -135,6 +135,7 @@ private:
   static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
+  static void Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
 
   map<string, void (*)(const vector<int> &constants, vector<int> &level)> solvers;

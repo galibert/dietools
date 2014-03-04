@@ -958,8 +958,8 @@ void state_t::apply_changed(set<int> changed)
 	}
       if(!nids_to_solve.empty() && !accepted_trans.empty()) {
 	int minv = INT_MAX, maxv = INT_MIN;
-	for(vector<int>::const_iterator i = term_to_trans[nid].begin(); i != term_to_trans[nid].end(); i++) {
-	  node *tr = nodes[*i];
+	for(set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
+	  node *tr = *j;
 	  int nt1 = tr->netids[node::T1];
 	  int nt2 = tr->netids[node::T2];
 	  int ng = tr->netids[node::GATE];
@@ -980,8 +980,7 @@ void state_t::apply_changed(set<int> changed)
 	string equation;
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
-
-	if(equation == "xTa.. Ta.. Daa.")
+	if(equation == "xTa.. Daa.")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
@@ -1240,10 +1239,16 @@ void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
   // T.k0.(a, k1, k2)
   // D.k3.(a, a, k4)
   int thr = constants[1] - ET;
-  double dt = sqrt(thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr));
-  level[0] = int(thr-dt+0.5);
-  assert(level[0] >= constants[2] && level[0] <= constants[4]);
-  assert(level[0] < constants[4] + ED);
+  double dt = thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr);
+  if(dt < 0) {
+    thr = constants[4] + ED;
+    dt = thr*thr - double(constants[0])/constants[3]*pow(constants[1]-ET-constants[2], 2) - constants[4]*(2*ED+constants[4]);
+    level[0] = int(thr+sqrt(dt)+0.5);
+
+  } else {
+    level[0] = int(thr-sqrt(dt)+0.5);
+    assert(level[0] < constants[4] + ED);
+  }
 }
 
 void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
@@ -1258,9 +1263,12 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
     double a = constants[0] + constants[3];
     double b = thrl*constants[0] + thrs*constants[3];
     double c = constants[3]*thrs*thrs - constants[0]*constants[2]*(constants[2]-2*thrl);
-    double dt = sqrt(b*b-a*c);
-    double r =(b-dt)/a;
-    level[0] = int(r + 0.5);
+    double dt = b*b-a*c;
+    if(dt >= 0) {
+      double r =(b-sqrt(dt))/a;
+      level[0] = int(r + 0.5);
+    } else
+      level[0] = int(0.5 + constants[4] - ET - sqrt(double(constants[0])/constants[3])*(constants[1]-ET-constants[2]));
 
   } else if(constants[2] >= constants[1] - ET && constants[5] <= constants[4] - ET) {
     // Second transistor linear, first saturates
@@ -1537,6 +1545,32 @@ void state_t::Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &lev
   level[0] = int(ra*10+0.5);
 }
 
+void state_t::Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(a, k1, k2)
+  // T.k3.(a, k4, k5)
+  // T.k6.(a, k7, k8)
+  // T.k6.(a, k10, k11)
+  // D.k12.(a, a, k13)
+
+  double AA = constants[0]+constants[3]+constants[6]+constants[9];
+  double BB =
+    constants[ 0]*(constants[ 1]+constants[ 2]-ET)+
+    constants[ 3]*(constants[ 4]+constants[ 5]-ET)+
+    constants[ 6]*(constants[ 7]+constants[ 8]-ET)+
+    constants[ 9]*(constants[10]+constants[11]-ET);
+  double CC =
+    constants[ 0]*constants[ 2]*(2*(constants[ 1]-ET)-constants[ 2])+
+    constants[ 3]*constants[ 5]*(2*(constants[ 4]-ET)-constants[ 5])+
+    constants[ 6]*constants[ 8]*(2*(constants[ 7]-ET)-constants[ 8])+
+    constants[ 9]*constants[11]*(2*(constants[10]-ET)-constants[11])+
+    constants[12]*ED*ED;
+
+  double dt = sqrt(BB*BB-AA*CC);
+  double ra = (BB-dt)/AA;
+  level[0] = int(ra*10+0.5);
+}
+
 void state_t::Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
 {
   // T.k0.(a, k1, k2)
@@ -1602,5 +1636,6 @@ void state_t::register_solvers()
   solvers["Ta.. Daa."]                               = Ta___Daa_;
   solvers["Ta.. Ta.. Daa."]                          = Ta___Ta___Daa_;
   solvers["Ta.. Ta.. Ta.. Daa."]                     = Ta___Ta___Ta___Daa_;
+  solvers["Ta.. Ta.. Ta.. Ta.. Daa."]                = Ta___Ta___Ta___Ta___Daa_;
   solvers["Ta.. Ta.. Ta.. Ta.. Ta.. Ta.. Ta.. Daa."] = Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_;
 }
