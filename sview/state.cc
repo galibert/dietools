@@ -789,6 +789,7 @@ void state_t::build()
       selectable_net[id] = false;
       is_fixed[id] = true;
       fixed_level[id] = power[id] = nodes[i]->type == node::V ? 50 : 0;
+      fixed_level[id] = power[id] = 0;
     }
 
   // Add the capacities induced delays
