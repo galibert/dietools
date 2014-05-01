@@ -8,6 +8,7 @@ SVMain::SVMain(QWidget *parent) : QMainWindow(parent)
   state_load(schem_file);
   svmain = this;
   setupUi(this);
+  nlist = NULL;
 }
 
 void SVMain::set_scroll_pos_range(int xc, int yc, int xm, int ym)

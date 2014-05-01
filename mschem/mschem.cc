@@ -576,7 +576,7 @@ public:
   static lt *checkparam(lua_State *L, int idx, const char *tname);
   static lt *getparam(lua_State *L, int idx, const char *tname);
   static lt *getparam_any(lua_State *L, int idx);
-  static void make_metatable(lua_State *L, const luaL_reg *table, const char *tname);
+  static void make_metatable(lua_State *L, const luaL_Reg *table, const char *tname);
 };
 
 class node : public lt {
@@ -803,7 +803,7 @@ lt *lt::getparam_any(lua_State *L, int idx)
   return *l;
 }
 
-void lt::make_metatable(lua_State *L, const luaL_reg *table, const char *tname)
+void lt::make_metatable(lua_State *L, const luaL_Reg *table, const char *tname)
 {
   luaL_newmetatable(L, tname);
   lua_pushvalue(L, -1);
@@ -812,7 +812,7 @@ void lt::make_metatable(lua_State *L, const luaL_reg *table, const char *tname)
   lua_pushstring(L, "__index");
   lua_pushvalue(L, -2);
   lua_settable(L, -3);
-  luaL_openlib(L, 0, table, 0);
+  luaL_setfuncs(L, table, 0);
   lua_pop(L, 1);
 }
 
@@ -1032,7 +1032,7 @@ void power_node::set_orientation(char orient, net *source)
 
 int power_node::luaopen(lua_State *L)
 {
-  static const luaL_reg m[] = {
+  static const luaL_Reg m[] = {
     { "__tostring", l_tostring },
     { "pos",        l_pos      },
     { "move",       l_move     },
@@ -1188,7 +1188,7 @@ void pad::set_orientation(char orient, net *source)
 
 int pad::luaopen(lua_State *L)
 {
-  static const luaL_reg m[] = {
+  static const luaL_Reg m[] = {
     { "__tostring", l_tostring },
     { "pos",        l_pos      },
     { "move",       l_move     },
@@ -1382,7 +1382,7 @@ int mosfet::l_depletion(lua_State *L)
 
 int mosfet::luaopen(lua_State *L)
 {
-  static const luaL_reg m[] = {
+  static const luaL_Reg m[] = {
     { "__tostring", l_tostring  },
     { "pos",        l_pos       },
     { "move",       l_move      },
@@ -1758,7 +1758,7 @@ void capacitor::set_orientation(char orient, net *source)
 
 int capacitor::luaopen(lua_State *L)
 {
-  static const luaL_reg m[] = {
+  static const luaL_Reg m[] = {
     { "__tostring", l_tostring },
     { "pos",        l_pos      },
     { "move",       l_move     },
@@ -1979,7 +1979,7 @@ int net::l_set_name(lua_State *L)
 
 int net::luaopen(lua_State *L)
 {
-  static const luaL_reg m[] = {
+  static const luaL_Reg m[] = {
     { "__tostring", l_tostring },
     { "type",       l_type     },
     { "route",      l_route    },
@@ -3313,7 +3313,7 @@ int l_tiles(lua_State *L)
 
 int luaopen_mschem(lua_State *L)
 {
-  static const luaL_reg mschem_l[] = {
+  static const luaL_Reg mschem_l[] = {
     { "nodes_rect",  l_nodes_rect  },
     { "nodes_trace", l_nodes_trace },
     { "make_match",  l_make_match  },
@@ -3328,12 +3328,13 @@ int luaopen_mschem(lua_State *L)
 
     { }
   };
-  luaL_openlib(L, "_G", mschem_l, 0);
+  lua_getglobal(L, "_G");
+  luaL_setfuncs(L, mschem_l, 0);
   return 1;
 }
 
-static const luaL_reg lualibs[] = {
-  { "",              luaopen_base        },
+static const luaL_Reg lualibs[] = {
+  { "_G",            luaopen_base        },
   { LUA_LOADLIBNAME, luaopen_package     },
   { LUA_TABLIBNAME,  luaopen_table       },
   { LUA_IOLIBNAME,   luaopen_io          },
@@ -3354,10 +3355,9 @@ void lua_fun(const char *fname, vector<node *> &nodes, vector<net *> &nets)
 {
   lua_State *L = luaL_newstate();
 
-  for(const luaL_reg *lib = lualibs; lib->func; lib++) {
-    lua_pushcfunction(L, lib->func);
-    lua_pushstring(L, lib->name);
-    lua_call(L, 1, 0);
+  for(const luaL_Reg *lib = lualibs; lib->func; lib++) {
+    luaL_requiref(L, lib->name, lib->func, 1);
+    lua_pop(L, 1);
   }
 
   if(luaL_loadfile(L, fname)) {

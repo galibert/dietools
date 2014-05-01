@@ -1,7 +1,7 @@
 #ifndef SVDISPLAY_H
 #define SVDISPLAY_H
 
-#include <QtGui/QWidget>
+#include <QtWidgets/QWidget>
 #include <vector>
 #include <string>
 

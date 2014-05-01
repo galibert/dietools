@@ -1,5 +1,5 @@
-ALLINC = -I../libdie `pkg-config --cflags QtGui` `freetype-config --cflags`
-ALLLIB = -L../libdie -ldie `pkg-config --libs QtGui` `freetype-config --libs`
+ALLINC = -I../libdie `pkg-config --cflags Qt5Widgets` `freetype-config --cflags`
+ALLLIB = -L../libdie -ldie `pkg-config --libs Qt5Widgets` `freetype-config --libs`
 DEPLIB = ../libdie/libdie.a
 
 PROG = sview
@@ -14,7 +14,7 @@ OPT=-O9
 
 CC=gcc
 CXX=g++
-CFLAGS=-g -Wall -Wno-strict-overflow -Wno-unused-parameter ${OPT}
+CFLAGS=-fPIC -g -Wall -Wno-strict-overflow -Wno-unused-parameter ${OPT}
 
 all: ${PROG}
 

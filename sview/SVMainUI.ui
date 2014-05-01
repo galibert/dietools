@@ -56,7 +56,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>20</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -77,19 +77,6 @@
    <addaction name="menuZoom"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QToolBar" name="toolBar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="separator"/>
-   <addaction name="separator"/>
-  </widget>
   <action name="action_Quit">
    <property name="text">
     <string>&amp;Quit</string>
@@ -144,7 +131,7 @@
  <connections>
   <connection>
    <sender>action_Quit</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>SVMainUI</receiver>
    <slot>close()</slot>
    <hints>
@@ -165,8 +152,8 @@
    <slot>hscroll(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>371</x>
-     <y>419</y>
+     <x>380</x>
+     <y>568</y>
     </hint>
     <hint type="destinationlabel">
      <x>365</x>
@@ -181,8 +168,8 @@
    <slot>vscroll(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>471</x>
-     <y>210</y>
+     <x>790</x>
+     <y>238</y>
     </hint>
     <hint type="destinationlabel">
      <x>291</x>
@@ -192,7 +179,7 @@
   </connection>
   <connection>
    <sender>actionReload</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>reload()</slot>
    <hints>
@@ -208,7 +195,7 @@
   </connection>
   <connection>
    <sender>actionZoom_In</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>zoom_in()</slot>
    <hints>
@@ -224,7 +211,7 @@
   </connection>
   <connection>
    <sender>actionZoom_Out</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>zoom_out()</slot>
    <hints>
