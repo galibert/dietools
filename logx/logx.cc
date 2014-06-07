@@ -126,6 +126,7 @@ public:
 
   int id;
   int powernet;
+  bool has_gate;
 
   net(reader &rd, int id);
   virtual ~net();
@@ -220,6 +221,7 @@ capacitor::~capacitor()
 net::net(reader &rd, int _id)
 {
   powernet = N_NORMAL;
+  has_gate = false;
   id = _id;
   int nx = rd.gi();
   pt.resize(nx);
@@ -385,6 +387,7 @@ void state_load(const char *fname)
       net_to_trans_term[t->nets[T1]].push_back(t);
       if(t->nets[T1] != t->nets[T2])
 	net_to_trans_term[t->nets[T2]].push_back(t);
+      t->nets[GATE]->has_gate = true;
     }
   }
 }
@@ -393,12 +396,59 @@ string escape(string n)
 {
   for(unsigned int i=0; i != n.size(); i++) {
     char c = n[i];
-    if(c == '.' || c == '-' || c == ' ' || c == '\'')
+    if(c == '.' || c == '-' || c == ' ' || c == '\'' || c == '+')
       n[i] = '_';
   }
   if(n[0] >= '0' && n[0] <= '9')
     n = 'n' + n;
   return n;
+}
+
+struct mapper_term {
+  enum {
+    P_1 = -1,
+    P_0 = -2
+  };
+
+  bool depletion;
+  int netvar[3];
+};
+
+struct mapper {
+  vector<mapper_term> terms;
+  vector<net *> nets;
+  set<int> outputs;
+
+  int count_t, count_d, count_v;
+};
+
+string netvar_name(int id)
+{
+  char buf[16];
+  if(id == mapper_term::P_0)
+    return "0";
+  else if(id == mapper_term::P_1)
+    return "1";
+  else if(id < 26)
+    sprintf(buf, "%c", 'a'+id);
+  else
+    sprintf(buf, "<%d>", id);
+  return buf;
+}
+
+void make_counts(mapper &m)
+{
+  m.count_t = m.count_d = m.count_v = 0;
+
+  for(auto i : m.terms) {
+    if(i.depletion)
+      m.count_d++;
+    else
+      m.count_t++;
+    for(int j=0; j<3; j++)
+      if(m.count_v <= i.netvar[j])
+	m.count_v = i.netvar[j]+1;
+  }
 }
 
 void build_net_list(set<net *> &nets, net *root)
@@ -413,30 +463,446 @@ void build_net_list(set<net *> &nets, net *root)
       mosfet *t = *i;
       for(int term=0; term<3; term++) {
 	net *n1 = t->nets[term];
-	if(nets.find(n1) == nets.end()) {
+	if(nets.find(n1) == nets.end() && (n1 == root || !n1->is_named())) {
 	  nets.insert(n1);
-	  if(!n1->is_named())
-	    stack.push_back(n1);
+	  stack.push_back(n1);
 	}
       }
     }
   }
 }
 
+void build_net_groups(list<set<net *>> &netgroups, const set<net *> &nets)
+{
+  set<net *> done;
+  for(auto i : nets) {
+    if(done.find(i) == done.end() && !i->powernet) {
+      netgroups.push_back(set<net *>());
+      auto &g = netgroups.back();
+      list<net *> stack;
+      stack.push_back(i);
+      g.insert(i);
+      while(!stack.empty()) {
+	net *n = stack.front();
+	stack.pop_front();
+	done.insert(n);
+	const auto &trans = net_to_trans_term[n];
+	for(const auto t : net_to_trans_term[n]) {
+	  for(int term=0; term<3; term++)
+	    if(term != GATE) {
+	      net *n1 = t->nets[term];
+	      if(nets.find(n1) != nets.end() && !n1->powernet && g.find(n1) == g.end()) {
+		g.insert(n1);
+		stack.push_back(n1);
+	      }
+	    }
+	}
+      }
+    }
+  }
+}
+
+void build_mapper(mapper &m, const set<net *> &g)
+{
+  set<const mosfet *> done;
+  map<net *, int> ids;
+
+  for(auto i : g) {
+    for(const auto t : net_to_trans_term[i])
+      if(done.find(t) == done.end()) {
+	m.terms.resize(m.terms.size()+1);
+	mapper_term &mt = m.terms.back();
+	mt.depletion = t->depletion;
+	for(int term=0; term<3; term++) {
+	  net *n = t->nets[term];
+	  if(n->powernet)
+	    mt.netvar[term] = n->powernet == N_VCC ? mapper_term::P_1 : mapper_term::P_0;
+	  else {
+	    auto idi = ids.find(n);
+	    int id;
+	    if(idi == ids.end()) {
+	      id = m.nets.size();
+	      ids[n] = id;
+	      m.nets.push_back(n);
+	      if(g.find(n) != g.end() && (n->has_gate || n->is_named()))
+		m.outputs.insert(id);
+	    } else
+	      id = idi->second;
+	    mt.netvar[term] = id;
+	  }
+	}
+      }
+  }
+  make_counts(m);
+}
+
+string mapper_to_eq(const mapper &m)
+{
+  string r;
+  for(auto i : m.terms) {
+    r += i.depletion ? 'd' : 't';
+    r += netvar_name(i.netvar[T1]);
+    r += netvar_name(i.netvar[GATE]);
+    r += netvar_name(i.netvar[T2]);
+    r +=' ';
+  }
+  r += '+';
+  for(auto i : m.outputs)
+    r += netvar_name(i);
+  return r;
+}
+
+string vname(const mapper &m, const vector<int> &vars, int id)
+{
+  net *n = m.nets[vars[id]];
+  if(n->is_named())
+    return n->name;
+  else
+    return 'n' + n->name;
+}
+
+void handler_d1aa_tba0__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !%s;\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str());
+}
+
+struct handler {
+  mapper m;
+  void (*f)(const mapper &m, const vector<int> &vars);
+
+  handler(mapper _m, void (*_f)(const mapper &m, const vector<int> &vars)) { m = _m; f = _f; }
+};
+
+list<handler> handlers;
+
+int get_netvar(const char *&eq)
+{
+  if(*eq == '0') {
+    eq++;
+    return mapper_term::P_0;
+  }
+  if(*eq == '1') {
+    eq++;
+    return mapper_term::P_1;
+  }
+  if(*eq != '<')
+    return *eq++ - 'a';
+  int id = strtol(eq+1, 0, 10);
+  while(*eq++ != '>');
+  return id;
+}
+
+void eq_parse(mapper &m, const char *eq)
+{
+  while(*eq) {
+    switch(*eq++) {
+    case 'd':
+    case 't': {
+      m.terms.resize(m.terms.size()+1);
+      mapper_term &mt = m.terms.back();
+      mt.depletion = eq[-1] == 'd';
+      mt.netvar[T1] = get_netvar(eq);
+      mt.netvar[GATE] = get_netvar(eq);
+      mt.netvar[T2] = get_netvar(eq);
+      eq++;
+      break;
+    }
+      
+    case '+':
+      while(*eq)
+	m.outputs.insert(get_netvar(eq));
+      break;
+
+    default:
+      abort();
+    }
+  }
+  make_counts(m);
+}
+
+void reg(const char *eq, void (*f)(const mapper &m, const vector<int> &vars))
+{
+  mapper m;
+  eq_parse(m, eq);
+  handlers.push_back(handler(m, f));
+}
+
+void register_handlers()
+{
+  reg("d1aa tba0 +a", handler_d1aa_tba0__a);
+}
+
+bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
+{
+  if(m1.count_t != m2.count_t || m1.count_d != m2.count_d || m1.count_v != m2.count_v || m1.outputs.size() != m2.outputs.size())
+    return false;
+
+  for(auto &i : vars)
+    i = -1;
+
+  int nterm = m1.count_t + m1.count_d;
+
+  list<int> match_order;
+  set<int> match_tagged;
+
+  list<int> match_unordered;
+  for(int i=0; i != nterm; i++)
+      match_unordered.push_back(i);
+
+  while(!match_unordered.empty()) {
+    int best_free_count = 0;
+    list<int>::iterator best_free;
+    for(list<int>::iterator i = match_unordered.begin(); i != match_unordered.end();) {
+      const mapper_term &m = m1.terms[*i];
+      int count = 0;
+      for(unsigned int j=0; j != 3; j++)
+	if(m.netvar[j] >= 0 && match_tagged.find(m.netvar[j]) == match_tagged.end())
+	  count++;
+      if(!count) {
+	match_order.push_back(*i);
+	list<int>::iterator ii = i;
+	i++;
+	match_unordered.erase(ii);
+      } else {
+	if(best_free_count == 0 || count < best_free_count) {
+	  best_free_count = count;
+	  best_free = i;
+	}
+	i++;
+      }	
+    }
+    if(best_free_count == 0) {
+      assert(match_unordered.empty());
+      break;
+    }
+    match_order.push_back(*best_free);
+    const mapper_term &m = m1.terms[*best_free];
+    for(unsigned int j=0; j != 3; j++)
+      if(m.netvar[j] >= 0)
+	match_tagged.insert(m.netvar[j]);
+    match_unordered.erase(best_free);
+  }
+
+  int slot = 0;
+  vector<int> cursors;
+  vector<int> alts;
+  vector<bool> fixed;
+  cursors.resize(nterm);
+  alts.resize(nterm);
+  list<int>::iterator cur_match = match_order.begin();
+  map<int, int> cur_nodes;
+  map<int, int> cur_nets;
+  map<int, int> net_slots;
+  set<int> used_nodes;
+  set<int> used_nets;
+  goto changed_slot;
+
+ changed_slot:
+  {
+    if(0)
+      fprintf(stderr, "changed slot %d\n", slot);
+    cursors[slot] = 0;
+  }
+
+ try_slot:
+  {
+    if(1)
+      fprintf(stderr, "try slot %d\n", slot);
+    const mapper_term &me = m1.terms[*cur_match];
+    assert(cursors[slot] != nterm);
+    int n = cursors[slot];
+    if(used_nodes.find(n) != used_nodes.end())
+      goto next_non_alt_in_slot;
+
+    bool compatible = me.depletion == m2.terms[n].depletion;
+
+    if(!compatible)
+      goto next_non_alt_in_slot;
+
+    used_nodes.insert(n);
+    if(0)
+      fprintf(stderr, "slot %d adding %d\n", slot, *cur_match);
+    cur_nodes[*cur_match] = n;
+    alts[slot] = 0;
+    goto try_alt;
+  }
+
+ try_alt:
+  {
+    if(1) {
+      fprintf(stderr, "try alt %d %d %d\n", slot, alts[slot], *cur_match);
+    }
+    const mapper_term &me = m1.terms[*cur_match];
+    int n = cursors[slot];
+    vector<int> params;
+    params.resize(3);
+    switch(alts[slot]) {
+    case 0:
+      params[0] = m2.terms[n].netvar[T1];
+      params[1] = m2.terms[n].netvar[GATE];
+      params[2] = m2.terms[n].netvar[T2];
+      break;
+    case 1:
+      params[0] = m2.terms[n].netvar[T2];
+      params[1] = m2.terms[n].netvar[GATE];
+      params[2] = m2.terms[n].netvar[T1];
+      break;
+    }
+
+    map<int, int> temp_nets;
+    set<int> temp_used_nets;
+    for(unsigned int i=0; i != 3; i++) {
+      if(params[i] >= 0) {
+	if(1) {
+	  fprintf(stderr, "  check param %d vs. %d\n", i, params[i]);
+	}
+	map<int, int>::const_iterator ni = cur_nets.find(me.netvar[i]);	
+	if(ni == cur_nets.end()) {
+	  ni = temp_nets.find(me.netvar[i]);
+	  if(ni == temp_nets.end()) {
+	    if(used_nets.find(params[i]) != used_nets.end())
+	      goto next_alt_in_slot;
+	    if(temp_used_nets.find(params[i]) != temp_used_nets.end())
+	      goto next_alt_in_slot;
+	    temp_nets[me.netvar[i]] = params[i];
+	    temp_used_nets.insert(params[i]);
+	    continue;
+	  }
+	}
+	if(ni->second != params[i])
+	  goto next_alt_in_slot;
+      }
+    }
+
+    for(map<int, int>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
+      cur_nets[i->first] = i->second;
+      used_nets.insert(i->second);
+      net_slots[i->first] = slot;
+    }
+    goto advance_slot;
+  }
+
+ next_alt_in_slot:
+  {
+    if(1)
+      fprintf(stderr, "next alt in slot %d %d\n", slot, alts[slot]);
+    const mapper_term &me = m1.terms[*cur_match];
+    alts[slot]++;
+    if(alts[slot] == 2) {
+      int n = cursors[slot];   
+      assert(used_nodes.find(n) != used_nodes.end());
+      used_nodes.erase(used_nodes.find(n));
+      if(1)
+	fprintf(stderr, "slot %d removing %d\n", slot, *cur_match);
+      cur_nodes.erase(cur_nodes.find(*cur_match));
+      goto next_non_alt_in_slot;
+    }
+    goto try_alt;
+  }
+
+ next_non_alt_in_slot:
+  {
+    if(0)
+      fprintf(stderr, "next non alt in slot %d\n", slot);
+    
+    cursors[slot]++;
+    if(cursors[slot] == all_nodes.end())
+      goto backoff_slot;
+    goto try_slot;
+  }
+
+ backoff_slot:
+  {
+    if(0)
+      fprintf(stderr, "backoff %d\n", slot);
+    slot--;
+    if(slot < 0)
+      goto no_match;
+    cur_match--;
+    const mapper_term &me = matches[*cur_match];
+    for(unsigned int i=0; i != me.params.size(); i++) {
+      map<string, int>::iterator j = net_slots.find(me.params[i]);
+      if(j != net_slots.end() && j->second == slot) {
+	assert(used_nets.find(cur_nets[me.params[i]]) != used_nets.end());
+	used_nets.erase(used_nets.find(cur_nets[me.params[i]]));;
+	net_slots.erase(j);
+	cur_nets.erase(cur_nets.find(me.params[i]));
+      }
+    }
+    goto next_alt_in_slot;
+  }
+
+ advance_slot:
+  {
+    if(0)
+      fprintf(stderr, "advance slot %d\n", slot);
+    slot++;
+    cur_match++;
+    if(cur_match == match_order.end())
+      goto match;
+    goto changed_slot;
+  }
+
+ no_match:
+  return 0;
+
+ match:
+  lua_newtable(L);
+  for(map<string, node *>::const_iterator i = cur_nodes.begin(); i != cur_nodes.end(); i++) {
+    i->second->wrap(L);
+    lua_setfield(L, -2, i->first.c_str());
+  }
+  for(map<string, net *>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++) {
+    i->second->wrap(L);
+    lua_setfield(L, -2, i->first.c_str());
+  }
+
+
+
+  return false;
+}
+
+bool handle(const mapper &m)
+{
+  vector<int> vars;
+  vars.resize(m.count_v);
+
+  for(auto i : handlers)
+    if(unify(i.m, m, vars)) {
+      i.f(m, vars);
+      return true;
+    }
+
+  return false;
+}
+
+
 void logx(const char *name)
 {
   net *root = netidx[name];
   set<net *> nets;
+  list<set<net *>> netgroups;
   build_net_list(nets, root);
+  build_net_groups(netgroups, nets);
 
-  for(set<net *>::iterator i = nets.begin(); i != nets.end(); i++)
-    if(!(*i)->powernet)
-      printf("%p %s\n", *i, (*i)->name.c_str());
+  for(auto j : netgroups) {
+    mapper m;
+    build_mapper(m, j);
+    string eq = mapper_to_eq(m);
+    printf("group: %s  %s\n", eq.c_str(), escape(eq).c_str());
+    if(!handle(m))
+      for(auto i : j)
+	printf("  %p %s\n", i, i->name.c_str());
+  }
 }
 
 int main(int argc, char **argv)
 {
   state_load(argv[1]);
+
+  register_handlers();
 
   logx(argv[2]);
 
