@@ -18,6 +18,9 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+const unsigned char *trace_data;
+int trace_size;
+
 struct cglyph {
   int sx, sy, dx, dy, left, top;
   unsigned char *image;
@@ -508,6 +511,7 @@ void state_load(const char *fname)
       else
 	n->nets[j] = nets[n->netids[j]];
   }
+  state.trace_pos = 0;
   state.reload();
 }
 
@@ -747,17 +751,54 @@ void state_t::save()
 {
 }
 
+void state_t::load_trace()
+{
+  int nn = nets.size();
+  int fs = (nn+7)/8;
+  int max_trace = trace_size/fs;
+  if(trace_size < fs)
+    return;
+  if(trace_pos >= max_trace)
+    trace_pos = max_trace-1;
+  const unsigned char *tp = trace_data + fs*trace_pos;
+  for(int i=0; i != nn; i++)
+    power[i] = (tp[i >> 3] & (1 << (i & 7))) ? 50 : 0;
+}
+
+void state_t::trace_next()
+{
+  trace_pos++;
+  load_trace();
+}
+
+void state_t::trace_prev()
+{
+  if(trace_pos) {
+    trace_pos--;
+    load_trace();
+  }
+}
+
+void state_t::trace_info(int &tp, int &ts)
+{
+  tp = trace_pos;
+  int nn = nets.size();
+  int fs = (nn+7)/8;
+  ts = trace_size/fs;
+}
+
 void state_t::reload()
 {
   build();
 
-#if 0
   set<int> changed;
   for(int i=0; i != int(nets.size()); i++)
     if(power[i])
       changed.insert(i);
   apply_changed(changed);
-#endif
+
+  if(trace_data)
+    load_trace();
 }
 
 void state_t::build()

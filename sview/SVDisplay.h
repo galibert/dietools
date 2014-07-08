@@ -22,6 +22,8 @@ public slots:
   void zoom_in();
   void zoom_out();
   void state_changed();
+  void trace_next();
+  void trace_prev();
 
 signals:
   void track(int);
@@ -37,12 +39,13 @@ private:
   unsigned int *generated_image;
   unsigned int *ids_image;
   QImage *qimg;
-  int xc, yc, x0, y0, z;
+  int xc, yc, xm, ym, x0, y0, z;
   bool starting;
 
   void generate_image();
   void generate_ids();
   void rewamp_image();
+  void update_status();
 };
 
 #endif

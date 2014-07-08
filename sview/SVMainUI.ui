@@ -73,8 +73,16 @@
     <addaction name="actionZoom_Out"/>
     <addaction name="actionZoom_In"/>
    </widget>
+   <widget class="QMenu" name="menuTrace">
+    <property name="title">
+     <string>Trace</string>
+    </property>
+    <addaction name="actionTrace_next"/>
+    <addaction name="actionTrace_prev"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuZoom"/>
+   <addaction name="menuTrace"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_Quit">
@@ -109,6 +117,22 @@
     <string>=</string>
    </property>
   </action>
+  <action name="actionTrace_next">
+   <property name="text">
+    <string>Trace next</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="actionTrace_prev">
+   <property name="text">
+    <string>Trace prev</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -124,6 +148,8 @@
     <slot>zoom_in()</slot>
     <slot>zoom_out()</slot>
     <slot>state_changed()</slot>
+    <slot>trace_next()</slot>
+    <slot>trace_prev()</slot>
    </slots>
   </customwidget>
  </customwidgets>
@@ -254,6 +280,38 @@
     <hint type="destinationlabel">
      <x>232</x>
      <y>226</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionTrace_next</sender>
+   <signal>triggered()</signal>
+   <receiver>display_widget</receiver>
+   <slot>trace_next()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>389</x>
+     <y>288</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionTrace_prev</sender>
+   <signal>triggered()</signal>
+   <receiver>display_widget</receiver>
+   <slot>trace_prev()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>389</x>
+     <y>288</y>
     </hint>
    </hints>
   </connection>
