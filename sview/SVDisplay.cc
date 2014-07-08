@@ -10,6 +10,8 @@ SVDisplay::SVDisplay(QWidget *parent) : QWidget(parent)
   xc = state.sx*5;
   yc = state.sy*5;
   z = 64;
+  xm = 0;
+  ym = 0;
   starting = true;
   qimg = 0;
   generated_image = NULL;
@@ -221,20 +223,18 @@ void SVDisplay::resizeEvent(QResizeEvent *e)
   rewamp_image();
 }
 
-void SVDisplay::mouseMoveEvent(QMouseEvent *e)
+void SVDisplay::update_status()
 {
   int w = size().width();
   int h = size().height();
-  int xc = e->x();
-  int yc = e->y();
-  int xs0 = xc < 10 ? 0 : xc-10;
-  int ys0 = yc < 10 ? 0 : yc-10;
-  int xs1 = xc >= w-10 ? w-1 : xc+10;
-  int ys1 = yc >= h-10 ? h-1 : yc+10;
+  int xs0 = xm < 10 ? 0 : xm-10;
+  int ys0 = ym < 10 ? 0 : ym-10;
+  int xs1 = xm >= w-10 ? w-1 : xm+10;
+  int ys1 = ym >= h-10 ? h-1 : ym+10;
 
   unsigned int *ids = ids_image + ys0*w;
-  int x = z*e->x();
-  int y = z*e->y();
+  int x = z*xm;
+  int y = z*ym;
 
   unsigned int id = 0;
   int did = 0;
@@ -242,7 +242,7 @@ void SVDisplay::mouseMoveEvent(QMouseEvent *e)
     for(int xx=xs0; xx<=xs1; xx++) {
       unsigned int id1 = ids[xx];
       if(id1) {
-	int dt = (xx-xc)*(xx-xc) + (yy-yc)*(yy-yc);
+	int dt = (xx-xm)*(xx-xm) + (yy-ym)*(yy-ym);
 	if(id == 0 || dt < did) {
 	  did = dt;
 	  id = id1;
@@ -257,7 +257,20 @@ void SVDisplay::mouseMoveEvent(QMouseEvent *e)
     int pp = state.power[id & node::ID_MASK];
     p += sprintf(p, " %d.%dV", pp/10, pp%10);
   }
+  {
+    int tp, ts;
+    state.trace_info(tp, ts);
+    if(ts)
+      p += sprintf(p, " %d/%d", tp+1, ts);
+  }
   svmain->set_status(msg);
+}
+
+void SVDisplay::mouseMoveEvent(QMouseEvent *e)
+{
+  xm = e->x();
+  ym = e->y();
+  update_status();
 }
 
 void SVDisplay::mousePressEvent(QMouseEvent *e)
@@ -300,6 +313,7 @@ void SVDisplay::hscroll(int pos)
   x0 = xc - z*size().width()/2;
   generate_ids();
   update();
+  update_status();
 }
 
 void SVDisplay::vscroll(int pos)
@@ -310,6 +324,7 @@ void SVDisplay::vscroll(int pos)
   y0 = yc - z*size().height()/2;
   generate_ids();
   update();
+  update_status();
 }
 
 void SVDisplay::zoom_in()
@@ -318,6 +333,7 @@ void SVDisplay::zoom_in()
     z /= 2;
     rewamp_image();
     update();
+    update_status();
   }
 }
 
@@ -327,6 +343,7 @@ void SVDisplay::zoom_out()
     z *= 2;
     rewamp_image();
     update();
+    update_status();
   }
 }
 
@@ -335,10 +352,29 @@ void SVDisplay::reload()
   state_load(schem_file);
   generate_ids();
   update();
+  update_status();
 }
 
 void SVDisplay::state_changed()
 {
   generate_image();
   update();
+  update_status();
 }
+
+void SVDisplay::trace_next()
+{
+  state.trace_next();
+  generate_image();
+  update();
+  update_status();
+}
+
+void SVDisplay::trace_prev()
+{
+  state.trace_prev();
+  generate_image();
+  update();
+  update_status();
+}
+

@@ -84,10 +84,17 @@ public:
   set<string> save_selected;
   map<string, char> save_fixed_level;
 
+  int trace_pos;
+
   void save();
   void build();
   void reload();
   void apply_changed(set<int> changed);
+
+  void load_trace();
+  void trace_next();
+  void trace_prev();
+  void trace_info(int &tp, int &ts);
 
   state_t();
 
@@ -147,6 +154,8 @@ extern vector<net *> nets;
 extern state_t state;
 
 extern const char *schem_file;
+extern const unsigned char *trace_data;
+extern int trace_size;
 
 string id_to_name(unsigned int id);
 

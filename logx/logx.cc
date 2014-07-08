@@ -396,7 +396,7 @@ string escape(string n)
 {
   for(unsigned int i=0; i != n.size(); i++) {
     char c = n[i];
-    if(c == '.' || c == '-' || c == ' ' || c == '\'' || c == '+')
+    if(c == '.' || c == '-' || c == ' ' || c == '\'' || c == '+' || c == '<' || c == '>')
       n[i] = '_';
   }
   if(n[0] >= '0' && n[0] <= '9')
@@ -531,6 +531,7 @@ void build_mapper(mapper &m, const set<net *> &g)
 	    mt.netvar[term] = id;
 	  }
 	}
+	done.insert(t);
       }
   }
   make_counts(m);
@@ -561,11 +562,294 @@ string vname(const mapper &m, const vector<int> &vars, int id)
     return 'n' + n->name;
 }
 
-void handler_d1aa_tba0__a(const mapper &m, const vector<int> &vars)
+void handler_d1aa_tab0__a(const mapper &m, const vector<int> &vars)
 {
   printf("  %s = !%s;\n",
 	 vname(m, vars, 0).c_str(),
 	 vname(m, vars, 1).c_str());
+}
+
+void handler_tab0_tac0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str());
+}
+
+void handler_tab0_tac0_tad0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str());
+}
+
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str(),
+	 vname(m, vars, 12).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str(),
+	 vname(m, vars, 12).c_str(),
+	 vname(m, vars, 13).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str(),
+	 vname(m, vars, 12).c_str(),
+	 vname(m, vars, 13).c_str(),
+	 vname(m, vars, 14).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str(),
+	 vname(m, vars, 12).c_str(),
+	 vname(m, vars, 13).c_str(),
+	 vname(m, vars, 14).c_str(),
+	 vname(m, vars, 15).c_str());
+}
+
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_taq0_daa1__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str(),
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 5).c_str(),
+	 vname(m, vars, 6).c_str(),
+	 vname(m, vars, 7).c_str(),
+	 vname(m, vars, 8).c_str(),
+	 vname(m, vars, 9).c_str(),
+	 vname(m, vars, 10).c_str(),
+	 vname(m, vars, 11).c_str(),
+	 vname(m, vars, 12).c_str(),
+	 vname(m, vars, 13).c_str(),
+	 vname(m, vars, 14).c_str(),
+	 vname(m, vars, 15).c_str(),
+	 vname(m, vars, 16).c_str());
+}
+
+void handler_tab0_daa1_tadc_tcfe_tehg__acf(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !%s;\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
+  printf("  set_t(%s, %s || %s, (%s && %s) || (%s && %s))\n", vname(m, vars, 2).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 0).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 2).c_str());
+  printf("  set_t(%s, %s || %s, (%s && %s) || (%s && %s))\n", vname(m, vars, 4).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 7).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 2).c_str(), vname(m, vars, 7).c_str(), vname(m, vars, 4).c_str());
+  printf("  set_t(%s, %s, %s)\n", vname(m, vars, 6).c_str(), vname(m, vars, 7).c_str(), vname(m, vars, 4).c_str());
+}
+
+void handler_ta1b__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = %s;\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
+}
+
+void handler_t0ba_tadc__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  set_t(%s, %s || %s, %s && !%s);\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 2).c_str(), vname(m, vars, 1).c_str());
+}
+
+void handler_t0ba_daa1_ta1c__ac(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = %s = !%s;\n", vname(m, vars, 2).c_str(), vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
+}
+
+void handler_tab0_tac0_daa1_ta1d__ad(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = %s = !(%s || %s);\n",
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str());
+}
+
+void handler_tab0_tac0_daa1_taed__ad(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !(%s || %s);\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str(),
+	 vname(m, vars, 2).c_str());
+  printf("  set_t(%s, %s, %s);\n",
+	 vname(m, vars, 3).c_str(),
+	 vname(m, vars, 4).c_str(),
+	 vname(m, vars, 0).c_str());
+
+}
+
+template<int n> void handler_tab1_tac0__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  set_01(%s, %s",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 2).c_str());
+  for(int i=1; i<n; i++)
+    printf(" || %s",
+	   vname(m, vars, 2+i).c_str());
+  printf(", %s);\n",
+	 vname(m, vars, 1).c_str());	 
 }
 
 struct handler {
@@ -631,13 +915,57 @@ void reg(const char *eq, void (*f)(const mapper &m, const vector<int> &vars))
 
 void register_handlers()
 {
-  reg("d1aa tba0 +a", handler_d1aa_tba0__a);
+  reg("d1aa tab0 +a", handler_d1aa_tab0__a);
+  reg("tab0 tac0 daa1 +a", handler_tab0_tac0_daa1__a);
+  reg("tab0 tac0 tad0 daa1 +a", handler_tab0_tac0_tad0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 daa1 +a", handler_tab0_tac0_tad0_tae0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_daa1__a);
+  reg("tab0 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 taq0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_taq0_daa1__a);
+
+  reg("tab1 tac0 +a", handler_tab1_tac0__a<1>);
+  reg("tab1 tac0 tad0 +a", handler_tab1_tac0__a<2>);
+  reg("tab1 tac0 tad0 tae0 +a", handler_tab1_tac0__a<3>);
+  reg("tab1 tac0 tad0 tae0 taf0 +a", handler_tab1_tac0__a<4>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 +a", handler_tab1_tac0__a<5>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 +a", handler_tab1_tac0__a<6>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 +a", handler_tab1_tac0__a<7>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 +a", handler_tab1_tac0__a<8>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 +a", handler_tab1_tac0__a<9>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 +a", handler_tab1_tac0__a<10>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 +a", handler_tab1_tac0__a<11>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 +a", handler_tab1_tac0__a<12>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 +a", handler_tab1_tac0__a<13>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 +a", handler_tab1_tac0__a<14>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 taq0 +a", handler_tab1_tac0__a<15>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 taq0 tar0 +a", handler_tab1_tac0__a<16>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 taq0 tar0 tas0 +a", handler_tab1_tac0__a<17>);
+  reg("tab1 tac0 tad0 tae0 taf0 tag0 tah0 tai0 taj0 tak0 tal0 tam0 tan0 tao0 tap0 taq0 tar0 tas0 tat0 +a", handler_tab1_tac0__a<18>);
+
+  reg("tab0 daa1 tadc tcfe tehg +acf", handler_tab0_daa1_tadc_tcfe_tehg__acf);
+  reg("ta1b +a", handler_ta1b__a);
+  reg("t0ba tadc +a", handler_t0ba_tadc__a);
+  reg("t0ba daa1 ta1c +ac", handler_t0ba_daa1_ta1c__ac);
+  reg("tab0 tac0 daa1 ta1d +ad", handler_tab0_tac0_daa1_ta1d__ad);
+  reg("tab0 tac0 daa1 taed +ad", handler_tab0_tac0_daa1_taed__ad);
 }
 
-bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
+bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 {
   if(m1.count_t != m2.count_t || m1.count_d != m2.count_d || m1.count_v != m2.count_v || m1.outputs.size() != m2.outputs.size())
     return false;
+
+  if(0)
+    fprintf(stderr, "unify:\n-- %s\n-- %s\n", mapper_to_eq(m1).c_str(), mapper_to_eq(m2).c_str());  
 
   for(auto &i : vars)
     i = -1;
@@ -708,7 +1036,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
 
  try_slot:
   {
-    if(1)
+    if(0)
       fprintf(stderr, "try slot %d\n", slot);
     const mapper_term &me = m1.terms[*cur_match];
     assert(cursors[slot] != nterm);
@@ -731,7 +1059,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
 
  try_alt:
   {
-    if(1) {
+    if(0) {
       fprintf(stderr, "try alt %d %d %d\n", slot, alts[slot], *cur_match);
     }
     const mapper_term &me = m1.terms[*cur_match];
@@ -740,23 +1068,23 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
     params.resize(3);
     switch(alts[slot]) {
     case 0:
-      params[0] = m2.terms[n].netvar[T1];
-      params[1] = m2.terms[n].netvar[GATE];
-      params[2] = m2.terms[n].netvar[T2];
+      params[T1] = m2.terms[n].netvar[T1];
+      params[GATE] = m2.terms[n].netvar[GATE];
+      params[T2] = m2.terms[n].netvar[T2];
       break;
     case 1:
-      params[0] = m2.terms[n].netvar[T2];
-      params[1] = m2.terms[n].netvar[GATE];
-      params[2] = m2.terms[n].netvar[T1];
+      params[T1] = m2.terms[n].netvar[T2];
+      params[GATE] = m2.terms[n].netvar[GATE];
+      params[T2] = m2.terms[n].netvar[T1];
       break;
     }
 
     map<int, int> temp_nets;
     set<int> temp_used_nets;
     for(unsigned int i=0; i != 3; i++) {
-      if(params[i] >= 0) {
-	if(1) {
-	  fprintf(stderr, "  check param %d vs. %d\n", i, params[i]);
+      if(params[i] >= 0 && me.netvar[i] >= 0) {
+	if(0) {
+	  fprintf(stderr, "  check param %d, m1[%d] vs. m2[%d]\n", i, me.netvar[i], params[i]);
 	}
 	map<int, int>::const_iterator ni = cur_nets.find(me.netvar[i]);	
 	if(ni == cur_nets.end()) {
@@ -766,6 +1094,8 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
 	      goto next_alt_in_slot;
 	    if(temp_used_nets.find(params[i]) != temp_used_nets.end())
 	      goto next_alt_in_slot;
+	    if(0)
+	      fprintf(stderr, "    acceptable, m1[%d] = m2[%d]\n", me.netvar[i], params[i]);
 	    temp_nets[me.netvar[i]] = params[i];
 	    temp_used_nets.insert(params[i]);
 	    continue;
@@ -773,7 +1103,14 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
 	}
 	if(ni->second != params[i])
 	  goto next_alt_in_slot;
-      }
+	else if(0)
+	  fprintf(stderr, "    all good\n");
+      } else if(params[i] != me.netvar[i]) {
+	if(0)
+	  fprintf(stderr, "  param %d wiring mismatched (%d / %d)\n", i, me.netvar[i], params[i]);
+	goto next_alt_in_slot;
+      } else if(0)
+	fprintf(stderr, "  param %d wired ok (%d)\n", i, params[i]);
     }
 
     for(map<int, int>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
@@ -786,15 +1123,14 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
 
  next_alt_in_slot:
   {
-    if(1)
+    if(0)
       fprintf(stderr, "next alt in slot %d %d\n", slot, alts[slot]);
-    const mapper_term &me = m1.terms[*cur_match];
     alts[slot]++;
     if(alts[slot] == 2) {
       int n = cursors[slot];   
       assert(used_nodes.find(n) != used_nodes.end());
       used_nodes.erase(used_nodes.find(n));
-      if(1)
+      if(0)
 	fprintf(stderr, "slot %d removing %d\n", slot, *cur_match);
       cur_nodes.erase(cur_nodes.find(*cur_match));
       goto next_non_alt_in_slot;
@@ -808,7 +1144,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
       fprintf(stderr, "next non alt in slot %d\n", slot);
     
     cursors[slot]++;
-    if(cursors[slot] == all_nodes.end())
+    if(cursors[slot] == nterm)
       goto backoff_slot;
     goto try_slot;
   }
@@ -821,16 +1157,17 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
     if(slot < 0)
       goto no_match;
     cur_match--;
-    const mapper_term &me = matches[*cur_match];
-    for(unsigned int i=0; i != me.params.size(); i++) {
-      map<string, int>::iterator j = net_slots.find(me.params[i]);
-      if(j != net_slots.end() && j->second == slot) {
-	assert(used_nets.find(cur_nets[me.params[i]]) != used_nets.end());
-	used_nets.erase(used_nets.find(cur_nets[me.params[i]]));;
-	net_slots.erase(j);
-	cur_nets.erase(cur_nets.find(me.params[i]));
+    const mapper_term &me = m1.terms[*cur_match];
+    for(unsigned int i=0; i != 3; i++)
+      if(me.netvar[i] >= 0) {
+	map<int, int>::iterator j = net_slots.find(me.netvar[i]);
+	if(j != net_slots.end() && j->second == slot) {
+	  assert(used_nets.find(cur_nets[me.netvar[i]]) != used_nets.end());
+	  used_nets.erase(used_nets.find(cur_nets[me.netvar[i]]));;
+	  net_slots.erase(j);
+	  cur_nets.erase(cur_nets.find(me.netvar[i]));
+	}
       }
-    }
     goto next_alt_in_slot;
   }
 
@@ -846,22 +1183,14 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> vars)
   }
 
  no_match:
-  return 0;
+  return false;
 
  match:
-  lua_newtable(L);
-  for(map<string, node *>::const_iterator i = cur_nodes.begin(); i != cur_nodes.end(); i++) {
-    i->second->wrap(L);
-    lua_setfield(L, -2, i->first.c_str());
-  }
-  for(map<string, net *>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++) {
-    i->second->wrap(L);
-    lua_setfield(L, -2, i->first.c_str());
-  }
+  vars.resize(m1.count_v);
+  for(map<int, int>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++)
+    vars[i->first] = i->second;
 
-
-
-  return false;
+  return true;
 }
 
 bool handle(const mapper &m)
@@ -890,11 +1219,12 @@ void logx(const char *name)
   for(auto j : netgroups) {
     mapper m;
     build_mapper(m, j);
-    string eq = mapper_to_eq(m);
-    printf("group: %s  %s\n", eq.c_str(), escape(eq).c_str());
-    if(!handle(m))
-      for(auto i : j)
-	printf("  %p %s\n", i, i->name.c_str());
+    if(!handle(m)) {
+      string eq = mapper_to_eq(m);
+      printf("group: %s  %s\n", eq.c_str(), escape(eq).c_str());
+      for(unsigned int i=0; i != m.nets.size(); i++)
+	printf("  %s %s\n", netvar_name(i).c_str(), m.nets[i]->name.c_str());
+    }
   }
 }
 
