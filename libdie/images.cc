@@ -60,9 +60,12 @@ pbm::pbm(const char *fname)
 {
   map_file_ro(fname, map_adr, size, false);
   assert(!memcmp(map_adr, "P4\n", 3));
-  sx = strtol((const char *)map_adr+3, 0, 10);
-  sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
-  img = (unsigned char *)strchr((const char *)map_adr+3, '\n')+1;
+  const char *p = (const char *)map_adr+3;
+  while(*p == '#')
+    p = strchr(p, '\n')+1;
+  sx = strtol(p, 0, 10);
+  sy = strtol(strchr(p, ' ')+1, 0, 10);
+  img = (unsigned char *)strchr(p, '\n')+1;
   sxb = (sx+7) >> 3;
 }
 
@@ -71,10 +74,13 @@ pbm::pbm(const char *fname, int _sx, int _sy, bool &created)
   map_file_ro(fname, map_adr, size, true);
   if(map_adr) {
     assert(!memcmp(map_adr, "P4\n", 3));
-    sx = strtol((const char *)map_adr+3, 0, 10);
-    sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
+    const char *p = (const char *)map_adr+3;
+    while(*p == '#')
+      p = strchr(p, '\n')+1;
+    sx = strtol(p, 0, 10);
+    sy = strtol(strchr(p, ' ')+1, 0, 10);
     assert(sx == _sx && sy == _sy);
-    img = (unsigned char *)strchr((const char *)map_adr+3, '\n')+1;
+    img = (unsigned char *)strchr(p, '\n')+1;
     sxb = (sx+7) >> 3;
     created = false;
 
@@ -99,20 +105,25 @@ pbm::pbm(int _sx, int _sy)
   map_adr = NULL;
   img = new unsigned char[sxb*sy];
   memset(img, 0xff, sxb*sy);
+  size = 0;
 }
 
 pbm::~pbm()
 {
-  munmap(map_adr, size);
+  if(map_adr)
+    munmap(map_adr, size);
 }
 
 pgm::pgm(const char *fname)
 {
   map_file_ro(fname, map_adr, size, false);
   assert(!memcmp(map_adr, "P5\n", 3));
-  sx = strtol((const char *)map_adr+3, 0, 10);
-  sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
-  img = (unsigned char *)strchr(strchr((const char *)map_adr+3, '\n')+1, '\n')+1;
+  const char *p = (const char *)map_adr+3;
+  while(*p == '#')
+    p = strchr(p, '\n')+1;
+  sx = strtol(p, 0, 10);
+  sy = strtol(strchr(p, ' ')+1, 0, 10);
+  img = (unsigned char *)strchr(strchr(p, '\n')+1, '\n')+1;
 }
 
 pgm::pgm(const char *fname, int _sx, int _sy, bool &created)
@@ -120,10 +131,13 @@ pgm::pgm(const char *fname, int _sx, int _sy, bool &created)
   map_file_ro(fname, map_adr, size, true);
   if(map_adr) {
     assert(!memcmp(map_adr, "P5\n", 3));
-    sx = strtol((const char *)map_adr+3, 0, 10);
-    sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
+    const char *p = (const char *)map_adr+3;
+    while(*p == '#')
+      p = strchr(p, '\n')+1;
+    sx = strtol(p, 0, 10);
+    sy = strtol(strchr(p, ' ')+1, 0, 10);
     assert(sx == _sx && sy == _sy);
-    img = (unsigned char *)strchr(strchr((const char *)map_adr+3, '\n')+1, '\n')+1;
+    img = (unsigned char *)strchr(strchr(p, '\n')+1, '\n')+1;
     created = false;
 
   } else {
@@ -146,9 +160,12 @@ ppm::ppm(const char *fname)
 {
   map_file_ro(fname, map_adr, size, false);
   assert(!memcmp(map_adr, "P6\n", 3));
-  sx = strtol((const char *)map_adr+3, 0, 10);
-  sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
-  img = (unsigned char *)strchr(strchr((const char *)map_adr+3, '\n')+1, '\n')+1;
+  const char *p = (const char *)map_adr+3;
+  while(*p == '#')
+    p = strchr(p, '\n')+1;
+  sx = strtol(p, 0, 10);
+  sy = strtol(strchr(p, ' ')+1, 0, 10);    
+  img = (unsigned char *)strchr(strchr(p, '\n')+1, '\n')+1;
 }
 
 ppm::ppm(const char *fname, int _sx, int _sy, bool &created)
@@ -156,10 +173,13 @@ ppm::ppm(const char *fname, int _sx, int _sy, bool &created)
   map_file_ro(fname, map_adr, size, true);
   if(map_adr) {
     assert(!memcmp(map_adr, "P6\n", 3));
-    sx = strtol((const char *)map_adr+3, 0, 10);
-    sy = strtol(strchr((const char *)map_adr+3, ' ')+1, 0, 10);
+    const char *p = (const char *)map_adr+3;
+    while(*p == '#')
+      p = strchr(p, '\n')+1;
+    sx = strtol(p, 0, 10);
+    sy = strtol(strchr(p, ' ')+1, 0, 10);    
     assert(sx == _sx && sy == _sy);
-    img = (unsigned char *)strchr(strchr((const char *)map_adr+3, '\n')+1, '\n')+1;
+    img = (unsigned char *)strchr(strchr(p, '\n')+1, '\n')+1;
     created = false;
 
   } else {

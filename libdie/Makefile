@@ -4,13 +4,13 @@ LIB  = libdie.a
 
 
 OBJS = circuit_info.o circuit_map.o net_info.o images.o reader.o State.o \
-       timing.o
+       timing.o fill.o
 
 SRCS = circuit_info.cc circuit_map.cc net_info.cc images.cc reader.cc State.cc \
-       timing.cc
+       timing.cc fill.cc
 
-HDRS = circuit_info.h net_info.h State.h circuit_map.h timing.h images.h \
-       reader.h
+HDRS = circuit_info.h fill.h lmisc.h net_info.h State.h circuit_map.h timing.h \
+       images.h reader.h
 
 OPT=-O9
 
@@ -46,10 +46,11 @@ distclean:
 	rm -f ${OBJS} ${LIB}
 
 ###
-circuit_info.o: circuit_info.h
+circuit_info.o: circuit_info.h reader.h
 circuit_map.o: circuit_map.h
 net_info.o: net_info.h circuit_map.h circuit_info.h
 images.o: images.h
 reader.o: reader.h
 State.o: State.h circuit_map.h circuit_info.h net_info.h
 timing.o: timing.h
+fill.o: fill.h

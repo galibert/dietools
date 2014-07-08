@@ -132,6 +132,8 @@ private:
   static void Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level);
   static void Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const vector<int> &constants, vector<int> &level);
   static void Ta___Daa__Taab(const vector<int> &constants, vector<int> &level);
+  static void Tb___Dbb__Tabb(const vector<int> &constants, vector<int> &level);
+  static void Tb___Dbb__Ta_b(const vector<int> &constants, vector<int> &level);
   static void Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);
   static void Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level);

@@ -751,11 +751,13 @@ void state_t::reload()
 {
   build();
 
+#if 0
   set<int> changed;
   for(int i=0; i != int(nets.size()); i++)
     if(power[i])
       changed.insert(i);
   apply_changed(changed);
+#endif
 }
 
 void state_t::build()
@@ -789,7 +791,7 @@ void state_t::build()
       selectable_net[id] = false;
       is_fixed[id] = true;
       fixed_level[id] = power[id] = nodes[i]->type == node::V ? 50 : 0;
-      fixed_level[id] = power[id] = 0;
+      //      fixed_level[id] = power[id] = 0;
     }
 
   // Add the capacities induced delays
@@ -981,14 +983,14 @@ void state_t::apply_changed(set<int> changed)
 	string equation;
 	vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
-	if(equation == "xTa.. Daa.")
+	if(equation == "Ta.. Daa. Taab")
 	  verb = true;
 	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
 	  printf("Unhandled equation system.\n");
 	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
-	  for(unsigned int i=0; i != nids_to_solve.size(); i++)
-	    highlight[nids_to_solve[i]] = true;
+	  //	  for(unsigned int i=0; i != nids_to_solve.size(); i++)
+	  //	    highlight[nids_to_solve[i]] = true;
 	  continue;
 	}
 
@@ -1012,7 +1014,8 @@ void state_t::apply_changed(set<int> changed)
 	  printf("  levels:\n");
 	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	    printf("   %s: %d.%d\n", i2v(i).c_str(), levels[i]/10, levels[i]%10);
-	  exit(1);
+	  for(unsigned int i = 0; i != nids_to_solve.size(); i++)
+	    levels[i] = minv;
 	}
 
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++) {
@@ -1232,7 +1235,7 @@ void state_t::Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
   int lim3 = constants[3] - ET;
   if(level[0] >= lim1 && level[0] >= lim3 && level[1] >= lim1 && level[2] >= lim3)
     return;
-  abort();
+  //  abort();
 }
 
 void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
@@ -1287,7 +1290,7 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
 
   } else {
     fprintf(stderr, "Ta___Ta__ %d %d %d | %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5]);
-    abort();
+    //    abort();
   }
 }
 
@@ -1321,7 +1324,7 @@ void state_t::Ta___Ta___Ta_b(const vector<int> &constants, vector<int> &level)
 
   } else {
     fprintf(stderr, "Ta___Ta___Ta_b %d %d %d | %d %d %d %d\n", constants[0], constants[1], constants[2], constants[3], constants[4], constants[5], constants[6]);
-    abort();
+    //    abort();
   }
   pull(level[1], constants[6], level[0]);
 }
@@ -1380,7 +1383,7 @@ void state_t::Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
   int lim3 = constants[3] - ET;
   if(level[1] >= lim1 && level[1] >= lim3 && level[0] >= lim1 && level[2] >= lim3)
     return;
-  abort();
+  //  abort();
 }
 
 void state_t::Ta___Dabb(const vector<int> &constants, vector<int> &level)
@@ -1516,11 +1519,60 @@ void state_t::Ta___Daa__Taab(const vector<int> &constants, vector<int> &level)
   // T.k5.(a, a, b)
 
   int thr = constants[1] - ET;
-  double dt = sqrt(thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr));
-  level[0] = int(thr-dt+0.5);
+  double dt1 = thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr);
+  if(dt1 >= 0) {
+    double dt = sqrt(dt1);
+    level[0] = int(thr-dt+0.5);
+  } else {
+    dt1 = pow(constants[3]*(-ED-constants[4]), 2)-constants[3]*(constants[0]*pow(constants[1]-ET-constants[2], 2) - constants[3]*constants[4]*(-2*ED-constants[4]));
+    fprintf(stderr, "%f\n", pow(constants[3]*(-ED-constants[4]), 2));
+    double dt = sqrt(dt1);
+    level[0] = int(constants[4]+ED+dt/constants[3]+0.5);
+  }
   assert(level[0] >= constants[2] && level[0] <= constants[4]);
-  assert(level[0] < constants[4] + ED);
   pull(level[1], level[0], level[0]);
+}
+
+void state_t::Tb___Dbb__Tabb(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, k1, k2)
+  // D.k3.(b, b, k4)
+  // T.k5.(a, b, b)
+
+  int thr = constants[1] - ET;
+  double dt1 = thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr);
+  if(dt1 >= 0) {
+    double dt = sqrt(dt1);
+    level[1] = int(thr-dt+0.5);
+  } else {
+    dt1 = pow(constants[3]*(-ED-constants[4]), 2)-constants[3]*(constants[0]*pow(constants[1]-ET-constants[2], 2) - constants[3]*constants[4]*(-2*ED-constants[4]));
+    fprintf(stderr, "%f\n", pow(constants[3]*(-ED-constants[4]), 2));
+    double dt = sqrt(dt1);
+    level[1] = int(constants[4]+ED+dt/constants[3]+0.5);
+  }
+  assert(level[1] >= constants[2] && level[1] <= constants[4]);
+  pull(level[0], level[1], level[1]);
+}
+
+void state_t::Tb___Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
+{
+  // T.k0.(b, k1, k2)
+  // D.k3.(b, b, k4)
+  // T.k5.(a, k6, b)
+
+  int thr = constants[1] - ET;
+  double dt1 = thr*thr - double(constants[3])/constants[0]*ED*ED + constants[2]*(constants[2]-2*thr);
+  if(dt1 >= 0) {
+    double dt = sqrt(dt1);
+    level[1] = int(thr-dt+0.5);
+  } else {
+    dt1 = pow(constants[3]*(-ED-constants[4]), 2)-constants[3]*(constants[0]*pow(constants[1]-ET-constants[2], 2) - constants[3]*constants[4]*(-2*ED-constants[4]));
+    fprintf(stderr, "%f\n", pow(constants[3]*(-ED-constants[4]), 2));
+    double dt = sqrt(dt1);
+    level[1] = int(constants[4]+ED+dt/constants[3]+0.5);
+  }
+  assert(level[1] >= constants[2] && level[1] <= constants[4]);
+  pull(level[0], constants[6], level[1]);
 }
 
 void state_t::Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
@@ -1634,6 +1686,8 @@ void state_t::register_solvers()
   solvers["Tbb. Daa. Taab"]                          = Tbb__Daa__Taab;
   solvers["Tb.. Tc.. Te.. Ta.b Ta.c Ta.d Ta.e Ta.f"] = Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f;
   solvers["Ta.. Daa. Taab"]                          = Ta___Daa__Taab;
+  solvers["Tb.. Dbb. Tabb"]                          = Tb___Dbb__Tabb;
+  solvers["Tb.. Dbb. Ta.b"]                          = Tb___Dbb__Ta_b;
   solvers["Ta.. Daa."]                               = Ta___Daa_;
   solvers["Ta.. Ta.. Daa."]                          = Ta___Ta___Daa_;
   solvers["Ta.. Ta.. Ta.. Daa."]                     = Ta___Ta___Ta___Daa_;

@@ -1,6 +1,9 @@
 #ifndef IMAGES_H
 #define IMAGES_H
 
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+
 struct ppm {
   unsigned char *img;
   int sx;
@@ -67,5 +70,18 @@ struct pbm {
 void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accept_not_here);
 void create_file_rw(const char *fname, unsigned char *&data, long size);
 void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, long &size, int dsize, const char *header);
+
+template<typename T, typename B> void load(T *&img, const char *fname, const B *base, boost::function1<void, T *> generator)
+{
+  bool created;
+  img = new T(fname, base->sx, base->sy, created);
+  if(created)
+    generator(img);
+}
+
+template<typename T, typename B> void load(T *&img, const char *fname, const B &base, boost::function1<void, T *> generator)
+{
+  load(img, fname, &base, generator);
+}
 
 #endif
