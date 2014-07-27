@@ -632,6 +632,7 @@ public:
   static int l_type(lua_State *L);
   static int l_tostring(lua_State *L);
   static int l_depletion(lua_State *L);
+  static int l_set_depletion(lua_State *L);
 };
 
 class capacitor : public node {
@@ -1380,18 +1381,26 @@ int mosfet::l_depletion(lua_State *L)
   return 1;
 }
 
+int mosfet::l_set_depletion(lua_State *L)
+{
+  mosfet *m = getparam(L, 1);
+  m->depletion = lua_toboolean(L, 2);
+  return 0;
+}
+
 int mosfet::luaopen(lua_State *L)
 {
   static const luaL_Reg m[] = {
-    { "__tostring", l_tostring  },
-    { "pos",        l_pos       },
-    { "move",       l_move      },
-    { "type",       l_type      },
-    { "depletion",  l_depletion },
-    { "t1",         l_t1        },
-    { "t2",         l_t2        },
-    { "gate",       l_gate      },
-    { "set_name",   l_set_name },
+    { "__tostring",     l_tostring      },
+    { "pos",            l_pos           },
+    { "move",           l_move          },
+    { "type",           l_type          },
+    { "depletion",      l_depletion     },
+    { "t1",             l_t1            },
+    { "t2",             l_t2            },
+    { "gate",           l_gate          },
+    { "set_name",       l_set_name      },
+    { "set_depletion",  l_set_depletion },
     { }
   };
 
