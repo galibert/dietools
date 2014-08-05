@@ -46,14 +46,15 @@ static void create_file_rw(const char *fname, unsigned char *&data, long size)
   close(fd);
 }
 
-circuit_map::circuit_map(const char *fname, int _sx, int _sy, bool create)
+circuit_map::circuit_map(const char *fname, int _nl, int _sx, int _sy, bool create)
 {
   sx = _sx;
   sy = _sy;
+  nl = _nl;
   unsigned char *map_adr;
   if(create) {
-    create_file_rw(fname, map_adr, long(3)*4*sx*sy);
-    memset(map_adr, 0xff, long(3)*sx*sy*4);
+    create_file_rw(fname, map_adr, long(nl)*4*sx*sy);
+    memset(map_adr, 0xff, long(nl)*sx*sy*4);
 
   } else {
     long size;
@@ -65,5 +66,5 @@ circuit_map::circuit_map(const char *fname, int _sx, int _sy, bool create)
 
 circuit_map::~circuit_map()
 {
-  munmap(data, long(3)*sx*sy*4);
+  munmap(data, long(nl)*sx*sy*4);
 }

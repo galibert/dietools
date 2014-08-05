@@ -520,7 +520,7 @@ void patch::bitmap_blend(int ox, int oy, const unsigned char *src, int src_w, in
   else
     src -= x;
   if(y > 0)
-    dest += (PATCH_SX+1)*(y+1);
+    dest += (PATCH_SX+1)*y;
   else
     src -= src_w*y;
   for(int yy=0; yy<h; yy++) {
@@ -643,7 +643,7 @@ public:
   int orientation;
   double f;
 
-  capacitor(int circ);
+  capacitor(int circ, double f);
   virtual ~capacitor();
   point get_pos(int pin) const;
   void refine_position();
@@ -1782,7 +1782,7 @@ int capacitor::luaopen(lua_State *L)
   return 1;
 }
 
-capacitor::capacitor(int _circ)
+capacitor::capacitor(int _circ, double _f)
 {
   circ = _circ;
   orientation = W_S;
@@ -1790,7 +1790,7 @@ capacitor::capacitor(int _circ)
   pos.x = (ci.x0 + ci.x1 + 1)/2/ratio;
   pos.y = ((state->info.sy - 1) - (ci.y0 + ci.y1 + 1)/2) / ratio;
 
-  f = ci.surface;
+  f = _f;
   char nn[32];
   sprintf(nn, "c%d", circ);
   oname = nn;
@@ -2349,14 +2349,34 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 
 void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
+  vector<unsigned long> capsinf;
   for(unsigned int i=0; i != state->info.circs.size(); i++) {
     const cinfo &ci = state->info.circs[i];
     if(ci.type == 'c') {
-      capacitor *caps = new capacitor(i);
-      nodes.push_back(caps);
-      nodemap[state->info.circs[i].net].push_back(ref(caps, T1));
-      nodemap[state->info.circs[i].netp].push_back(ref(caps, T2));
+      unsigned long id;
+      if(ci.net < ci.netp)
+	id = (((unsigned long)(ci.net )) << 48) | (((unsigned long)(ci.netp)) << 32);
+      else
+	id = (((unsigned long)(ci.netp)) << 48) | (((unsigned long)(ci.net )) << 32);
+      id |= i;
+      capsinf.push_back(id);
     }
+  }
+
+  sort(capsinf.begin(), capsinf.end());
+
+  double f = 0;
+  for(unsigned int i=0; i != capsinf.size(); i++) {
+    int cid = capsinf[i] & 0xffff;
+    f += state->info.circs[cid].surface;
+    if(i != capsinf.size()-1 && !((capsinf[i] ^ capsinf[i+1]) & 0xffffffffffff0000UL))
+      continue;
+    
+    capacitor *caps = new capacitor(cid, f);
+    nodes.push_back(caps);
+    nodemap[state->info.circs[cid].net].push_back(ref(caps, T1));
+    nodemap[state->info.circs[cid].netp].push_back(ref(caps, T2));
+    f = 0;
   }
 }
 

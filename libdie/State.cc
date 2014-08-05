@@ -5,7 +5,7 @@
 
 State::State(const char *info_path, const char *cmap_path, const char *pins_path) :
   info(info_path),
-  cmap(cmap_path, info.sx, info.sy, false),
+  cmap(cmap_path, info.nl, info.sx, info.sy, false),
   ninfo(pins_path, cmap, info)
 {
   vcc = ninfo.nets["vcc"];

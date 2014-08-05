@@ -72,19 +72,26 @@ void test_pixel_green(const char *layer, int pix, int p2, const unsigned char *s
     bad_pixel(layer, pix, p2, src);
 }
 
+void test_pixel_yellow(const char *layer, int pix, int p2, const unsigned char *src)
+{
+  if(src[1] != src[3] || src[0] || src[2] != src[3])
+    bad_pixel(layer, pix, p2, src);
+}
+
 struct test_f {
   const char *name;
   void (*test_function)(const char *, int, int, const unsigned char *);
 };
 
 test_f test_functions[] = {
-  { "blue",  test_pixel_blue },
-  { "red",   test_pixel_red },
-  { "black", test_pixel_black },
-  { "pink",  test_pixel_pink },
-  { "vias",  test_pixel_vias },
-  { "green", test_pixel_green },
-  { NULL,    NULL },
+  { "blue",   test_pixel_blue   },
+  { "red",    test_pixel_red    },
+  { "black",  test_pixel_black  },
+  { "pink",   test_pixel_pink   },
+  { "vias",   test_pixel_vias   },
+  { "green",  test_pixel_green  },
+  { "yellow", test_pixel_yellow },
+  { NULL,     NULL              },
 };
 
 int main(int argc, char **argv)
@@ -148,7 +155,6 @@ int main(int argc, char **argv)
     }
   }
 
-  g_type_init();
   rsvg_set_default_dpi(72.0);
   cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, sx, sy);
   cairo_t *cr = cairo_create(surface);
