@@ -18,6 +18,7 @@ circuit_info::circuit_info(const char *fname)
 
   sx = rd.gi();
   sy = rd.gi();
+  nl = rd.gi();
   rd.nl();
 
   int ne = rd.gi();

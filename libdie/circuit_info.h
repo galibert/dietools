@@ -31,7 +31,7 @@ public:
   map<int, list<int> > gate_to_trans;
   map<int, list<int> > term_to_trans;
 
-  int sx, sy;
+  int sx, sy, nl;
 
   circuit_info(const char *fname);
 };

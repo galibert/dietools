@@ -47,7 +47,7 @@ net_info::net_info(const char *fname, const circuit_map &cmap, const circuit_inf
 
     int cm;
     switch(type) {
-    case 'm': cm = 2; break;
+    case 'm': cm = cmap.nl >= 3 ? 2 : 1; break;
     case 'p': cm = 1; break;
     case 'a': cm = 0; break;
     default:
