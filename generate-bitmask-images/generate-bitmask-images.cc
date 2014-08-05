@@ -164,7 +164,10 @@ int main(int argc, char **argv)
       memcpy(&svg[j->second], j->first == layer_name ? "inline\"" : "none\"  ", 7);
 
     GError *error = NULL;
-    RsvgHandle *handle = rsvg_handle_new_from_data((const guint8 *)&svg[0], svg.size(), &error);
+    RsvgHandle *handle = rsvg_handle_new_with_flags(RSVG_HANDLE_FLAG_UNLIMITED);
+    
+    rsvg_handle_write(handle, (const guint8 *)&svg[0], svg.size(), &error);
+    rsvg_handle_close(handle, &error);
     if(error != NULL) {
       fprintf(stderr, "rvsg parsing failure %s\n", error->message);
       exit(1);
