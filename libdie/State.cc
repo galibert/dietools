@@ -102,7 +102,7 @@ void State::reset_to_floating()
   for(unsigned int i=0; i != forced_power.size(); i++)
     if(forced_power[i] != S_FLOAT)
       changed.insert(i);
-  apply_changed(changed);
+  //  apply_changed(changed);
 }
 
 void State::reset_to_zero()
