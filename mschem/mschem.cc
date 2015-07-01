@@ -2793,7 +2793,7 @@ int l_match(lua_State *L)
 	p++;
       me.type = string(q, p);
       int np;
-      if(me.type == "t" || me.type == "d")
+      if(me.type == "t" || me.type == "d" || me.type == "i")
 	np = 3;
       else if(me.type == "c")
 	np = 2;
@@ -2942,7 +2942,7 @@ int l_match(lua_State *L)
       goto next_non_alt_in_slot;
 
     bool compatible;
-    if(me.type == "t" || me.type == "d" || me.type == "n") {
+    if(me.type == "t" || me.type == "d" || me.type == "i") {
       int ttype = me.type == "t" ? State::T_NMOS : me.type == "d" ? State::T_NDEPL : State::T_PMOS;
       mosfet *m = dynamic_cast<mosfet *>(n);
       compatible = m && (m->ttype == ttype);
@@ -2981,7 +2981,7 @@ int l_match(lua_State *L)
     node *n = *cursors[slot];
     vector<net *> params;
     params.resize(me.params.size());
-    if(me.type == "t" || me.type == "d") {
+    if(me.type == "t" || me.type == "d" || me.type == "i") {
       switch(alts[slot]) {
       case 0:
 	params[0] = n->nets[T1];
@@ -3054,7 +3054,7 @@ int l_match(lua_State *L)
     if(0)
       fprintf(stderr, "next alt in slot %d %d\n", slot, alts[slot]);
     const match_entry &me = matches[*cur_match];
-    int nalt = me.type == "t" || me.type == "d" || me.type == "c" ? 2 : 1;
+    int nalt = me.type == "t" || me.type == "d" || me.type == "i" || me.type == "c" ? 2 : 1;
     alts[slot]++;
     if(alts[slot] == nalt) {
       node *n = *cursors[slot];   
