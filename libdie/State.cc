@@ -3,15 +3,16 @@
 #include <string.h>
 #include <stdio.h>
 
-State::State(const char *info_path, const char *cmap_path, const char *pins_path) :
+State::State(const char *info_path, const char *cmap_path, const char *pins_path, bool _cmos) :
   info(info_path),
   cmap(cmap_path, info.nl, info.sx, info.sy, false),
   ninfo(pins_path, cmap, info)
 {
+  cmos = _cmos;
   vcc = ninfo.nets["vcc"];
   gnd = ninfo.nets["gnd"];
 
-  depletion.resize(info.trans.size());
+  ttype.resize(info.trans.size());
   ignored.resize(info.trans.size());
 
   quasi_vcc.resize(info.nets.size());
@@ -29,7 +30,7 @@ State::State(const char *info_path, const char *cmap_path, const char *pins_path
   }
 
   for(unsigned int i=0; i != info.trans.size(); i++) {
-    depletion[i] = false;
+    ttype[i] = T_NMOS;
     ignored[i] = false;
   }
 
@@ -39,49 +40,59 @@ State::State(const char *info_path, const char *cmap_path, const char *pins_path
 
   quasi_vcc[vcc] = true;
 
-  for(unsigned int i=0; i != info.trans.size(); i++) {
-    const tinfo &ti = info.trans[i];
-    int q = -1;
-    if((ti.gate == vcc || ti.gate == gnd) && ti.t1 == vcc)
-      q = ti.t2;
-    if((ti.gate == vcc || ti.gate == gnd) && ti.t2 == vcc)
-      q = ti.t1;
-    if(q != -1) {
-      ignored[i] = true;
-      depletion[i] = ti.gate == gnd;
-      if(ti.f < 2) {
-	// Pullups on vertical lines through a resistor
-	pullup[q] = true;
-	//	cinfo &ci = info.circs[ti.circ];
-	//	fprintf(stderr, "qvcc-depl %s trans %d (%d, %d)-(%d, %d) f=%g\n", ninfo.net_name(q).c_str(), ti.circ, ci.x0, ci.y0, ci.x1, ci.y1, ti.f);
-      } else {
-	quasi_vcc[q] = true;
-	//	cinfo &ci = info.circs[ti.circ];
-	//	fprintf(stderr, "qvcc %s trans %d (%d, %d)-(%d, %d) f=%g\n", ninfo.net_name(q).c_str(), ti.circ, ci.x0, ci.y0, ci.x1, ci.y1, ti.f);
+  if(cmos) {
+    for(unsigned int i=0; i != info.trans.size(); i++) {
+      const tinfo &ti = info.trans[i];
+      if(ti.t1 == gnd || ti.t2 == gnd)
+	ttype[i] = T_NMOS;
+      else
+	ttype[i] = T_PMOS;
+    }
+  } else {
+    for(unsigned int i=0; i != info.trans.size(); i++) {
+      const tinfo &ti = info.trans[i];
+      int q = -1;
+      if((ti.gate == vcc || ti.gate == gnd) && ti.t1 == vcc)
+	q = ti.t2;
+      if((ti.gate == vcc || ti.gate == gnd) && ti.t2 == vcc)
+	q = ti.t1;
+      if(q != -1) {
+	ignored[i] = true;
+	ttype[i] = ti.gate == gnd ? T_NDEPL : T_NMOS;
+	if(ti.f < 2) {
+	  // Pullups on vertical lines through a resistor
+	  pullup[q] = true;
+	  //	cinfo &ci = info.circs[ti.circ];
+	  //	fprintf(stderr, "qvcc-depl %s trans %d (%d, %d)-(%d, %d) f=%g\n", ninfo.net_name(q).c_str(), ti.circ, ci.x0, ci.y0, ci.x1, ci.y1, ti.f);
+	} else {
+	  quasi_vcc[q] = true;
+	  //	cinfo &ci = info.circs[ti.circ];
+	  //	fprintf(stderr, "qvcc %s trans %d (%d, %d)-(%d, %d) f=%g\n", ninfo.net_name(q).c_str(), ti.circ, ci.x0, ci.y0, ci.x1, ci.y1, ti.f);
+	}
       }
     }
-  }
 
-  for(unsigned int i=0; i != info.trans.size(); i++) {
-    const tinfo &ti = info.trans[i];
-    int q = -1;
-    if(ti.gate == gnd && ti.t1 == gnd)
-      q = ti.t2;
-    if(ti.gate == gnd && ti.t2 == gnd)
-      q = ti.t1;
-    if(q != -1 && ti.f < 2) {
-      ignored[i] = true;
-      depletion[i] = true;
-      pulldown[q] = true;
+    for(unsigned int i=0; i != info.trans.size(); i++) {
+      const tinfo &ti = info.trans[i];
+      int q = -1;
+      if(ti.gate == gnd && ti.t1 == gnd)
+	q = ti.t2;
+      if(ti.gate == gnd && ti.t2 == gnd)
+	q = ti.t1;
+      if(q != -1 && ti.f < 2) {
+	ignored[i] = true;
+	ttype[i] = T_NDEPL;
+	pulldown[q] = true;
+      }
     }
-  }
 
-  for(unsigned int i=0; i != info.trans.size(); i++) {
-    const tinfo &ti = info.trans[i];
-    if(!quasi_vcc[ti.gate] && ((quasi_vcc[ti.t1] && ti.gate == ti.t2) || (quasi_vcc[ti.t2] && ti.gate == ti.t1))) {
-      depletion[i] = true;
-      ignored[i] = true;
-      pullup[ti.gate] = true;
+    for(unsigned int i=0; i != info.trans.size(); i++) {
+      const tinfo &ti = info.trans[i];
+      if(!quasi_vcc[ti.gate] && ((quasi_vcc[ti.t1] && ti.gate == ti.t2) || (quasi_vcc[ti.t2] && ti.gate == ti.t1))) {
+	ttype[i] = T_NDEPL;
+	ignored[i] = true;
+	pullup[ti.gate] = true;
+      }
     }
   }
 

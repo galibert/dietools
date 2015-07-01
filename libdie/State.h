@@ -10,14 +10,16 @@
 class State {
 public:
   enum { S_0, S_1, S_FLOAT };
+  enum { T_NMOS, T_PMOS, T_NDEPL };
   circuit_info info;
   circuit_map cmap;
   net_info ninfo;
 
   int vcc, gnd;
+  bool cmos;
   vector<bool> quasi_vcc;
   vector<bool> oscillator;
-  vector<bool> depletion;
+  vector<int> ttype;
   vector<bool> ignored;
   vector<bool> pullup, pulldown;
   vector<bool> display;
@@ -25,7 +27,7 @@ public:
   vector<int> power;
   vector<int> power_dist;
 
-  State(const char *info_path, const char *cmap_path, const char *pins_path);
+  State(const char *info_path, const char *cmap_path, const char *pins_path, bool cmos);
 
   void reset_to_floating();
   void reset_to_zero();

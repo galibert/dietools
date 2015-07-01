@@ -30,7 +30,7 @@ public:
 class node {
 public:
   enum { NODE_MARK = 0x01000000, NET_MARK = 0x02000000, TYPE_MASK = 0xff000000, ID_MASK = 0xffffff };
-  enum { T, D, V, G, P, C };
+  enum { T, D, I, V, G, P, C };
   enum { T1, T2, GATE };
   enum {
     W_S = 0,

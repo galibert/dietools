@@ -213,6 +213,83 @@ static void vline(unsigned int *ids, int ox, int oy, int w, int h, int z, int x,
   }
 }
 
+// ...###...
+// ..#...#..
+// .#.....#.
+// #.......#
+// #.......#
+// #.......#
+// .#.....#.
+// ..#...#..
+// ...###...
+
+// .###.
+// #...#
+// #...#
+// #...#
+// .###.
+
+// ###
+// #.#
+// ###
+
+static void invert(unsigned int *ids, int ox, int oy, int w, int h, int z, int x, int y, unsigned int id)
+{
+  static const int pt_1[] = { 0, 4, 1, 4, 2, 3, 3, 2, 4, 1, 4, 0, 4, -1, 3, -2, 2, -3, 1, -4, 0, -4, -1, -4, -2, -3, -3, -2, -4, -1, -4, 0, -4, 1, -3, 2, -2, 3, -1, 4 };
+  static const int pt_2[] = { 0, 2, 1, 2, 2, 1, 2, 0, 2, -1, 1, -2, 0, -2, -1, -2, -2, -1, -2, 0, -2, 1, -1, 2 };
+  static const int pt_4[] = { 0, 1, 1, 1, 1, 0, 1, -1, 0, -1, -1, -1, -1, 0, -1, 1 };
+  static const int pt_8[] = { 0, 0 };
+  ox /= z;
+  oy /= z;
+  x  /= z;
+  y  /= z;
+  const int *ptlist;
+  int ptcount;
+  switch(z) {
+  case 1:
+    if(x < ox-4 || x >= ox + w + 4)
+      return;
+    if(y < oy-4 || y >= oy + h + 4)
+      return;
+    ptlist = pt_1;
+    ptcount = sizeof(pt_1)/2/sizeof(int);
+    break;
+  case 2:
+    if(x < ox-2 || x >= ox + w + 2)
+      return;
+    if(y < oy-2 || y >= oy + h + 2)
+      return;
+    ptlist = pt_2;
+    ptcount = sizeof(pt_2)/2/sizeof(int);
+    break;
+  case 4:
+    if(x < ox-1 || x >= ox + w + 1)
+      return;
+    if(y < oy-1 || y >= oy + h + 1)
+      return;
+    ptlist = pt_4;
+    ptcount = sizeof(pt_4)/2/sizeof(int);
+    break;
+  default:
+    if(x < ox || x >= ox + w)
+      return;
+    if(y < oy || y >= oy + h)
+      return;
+    ptlist = pt_8;
+    ptcount = sizeof(pt_8)/2/sizeof(int);
+    break;
+  }
+  for(int i=0; i != ptcount; i++) {
+    int xx = x + ptlist[2*i];
+    int yy = y + ptlist[2*i+1];
+    if(xx < ox || xx >= ox + w)
+      continue;
+    if(yy < oy || yy >= oy + h)
+      continue;
+    *base(ids, ox, oy, w, h, xx, yy) = id;
+  }
+}
+
 static void rect(unsigned int *ids, int ox, int oy, int w, int h, int z, int x1, int y1, int x2, int y2, unsigned int id)
 {
   ox /= z;
@@ -440,6 +517,7 @@ void state_load(const char *fname)
   memset(tmap, 0xff, 256*4);
   tmap['t'] = node::T;
   tmap['d'] = node::D;
+  tmap['i'] = node::I;
   tmap['v'] = node::V;
   tmap['g'] = node::G;
   tmap['p'] = node::P;
@@ -457,7 +535,7 @@ void state_load(const char *fname)
     n->x = rd.gi()*10;
     n->y = (state.sy-rd.gi())*10;
     n->netids[node::T1] = rd.gi();
-    if(type == node::T || type == node::D) {
+    if(type == node::T || type == node::D || type == node::I) {
       n->netids[node::GATE] = rd.gi();
       n->netids[node::T2] = rd.gi();
       n->f = rd.gd();
@@ -518,7 +596,7 @@ void state_load(const char *fname)
 void node::bbox()
 {
   switch(type) {
-  case T: case D:
+  case T: case D: case I:
     x0 = x-40;
     x1 = x+40;
     y0 = y-40;
@@ -558,7 +636,7 @@ void node::draw(unsigned int *ids, int ox, int oy, int w, int h, int z) const
     return;
 
   switch(type) {
-  case T: case D:
+  case T: case D: case I:
     draw_mosfet(ids, ox, oy, w, h, z);
     break;
   case G:
@@ -585,8 +663,10 @@ void node::draw_mosfet(unsigned int *ids, int ox, int oy, int w, int h, int z) c
     vline(ids, ox, oy, w, h, z, x, y-20, y+20, id);
     hline(ids, ox, oy, w, h, z, x, x+10, y+20, id);
     vline(ids, ox, oy, w, h, z, x+10, y+20, y+40, nets[orientation == W_S ? T1 : T2]->id);
-    hline(ids, ox, oy, w, h, z, x-40, x-10, y, nets[GATE]->id);
+    hline(ids, ox, oy, w, h, z, x-40, type == I ? x-19 : x-10, y, nets[GATE]->id);
     vline(ids, ox, oy, w, h, z, x-10, y-20, y+20, id);
+    if(type == I)
+      invert(ids, ox, oy, w, h, z, x-15, y, id);
     if(type == D)
       rect(ids, ox, oy, w, h, z, x, y-20, x+4, y+20, id);
     break;
@@ -597,8 +677,10 @@ void node::draw_mosfet(unsigned int *ids, int ox, int oy, int w, int h, int z) c
     vline(ids, ox, oy, w, h, z, x, y-20, y+20, id);
     hline(ids, ox, oy, w, h, z, x-10, x, y+20, id);
     vline(ids, ox, oy, w, h, z, x-10, y+20, y+40, nets[orientation == E_S ? T1 : T2]->id);
-    hline(ids, ox, oy, w, h, z, x+10, x+40, y, nets[GATE]->id);
+    hline(ids, ox, oy, w, h, z, type == I ? x+19 : x+10, x+40, y, nets[GATE]->id);
     vline(ids, ox, oy, w, h, z, x+10, y-20, y+20, id);
+    if(type == I)
+      invert(ids, ox, oy, w, h, z, x+15, y, id);
     if(type == D)
       rect(ids, ox, oy, w, h, z, x-4, y-20, x, y+20, id);
     break;
@@ -609,8 +691,10 @@ void node::draw_mosfet(unsigned int *ids, int ox, int oy, int w, int h, int z) c
     hline(ids, ox, oy, w, h, z, x-20, x+20, y, id);
     vline(ids, ox, oy, w, h, z, x+20, y, y+10, id);
     hline(ids, ox, oy, w, h, z, x+20, x+40, y+10, nets[orientation == N_S ? T2 : T1]->id);
-    vline(ids, ox, oy, w, h, z, x, y-40, y-10, nets[GATE]->id);
+    vline(ids, ox, oy, w, h, z, x, y-40, type == I ? y-19 : y-10, nets[GATE]->id);
     hline(ids, ox, oy, w, h, z, x-20, x+20, y-10, id);
+    if(type == I)
+      invert(ids, ox, oy, w, h, z, x, y-15, id);
     if(type == D)
       rect(ids, ox, oy, w, h, z, x-20, y, x+20, y+4, id);
     break;
@@ -621,8 +705,10 @@ void node::draw_mosfet(unsigned int *ids, int ox, int oy, int w, int h, int z) c
     hline(ids, ox, oy, w, h, z, x-20, x+20, y, id);
     vline(ids, ox, oy, w, h, z, x+20, y-10, y, id);
     hline(ids, ox, oy, w, h, z, x+20, x+40, y-10, nets[orientation == S_S ? T2 : T1]->id);
-    vline(ids, ox, oy, w, h, z, x, y+10, y+40, nets[GATE]->id);
+    vline(ids, ox, oy, w, h, z, x, type == I ? y+19 : y+10, y+40, nets[GATE]->id);
     hline(ids, ox, oy, w, h, z, x-20, x+20, y+10, id);
+    if(type == I)
+      invert(ids, ox, oy, w, h, z, x, y+15, id);
     if(type == D)
       rect(ids, ox, oy, w, h, z, x-20, y-4, x+20, y, id);
     break;
@@ -845,7 +931,7 @@ void state_t::build()
 
   // Build the lookup tables
   for(int i=0; i != nt; i++)
-    if(nodes[i]->type == node::T || nodes[i]->type == node::D) {
+    if(nodes[i]->type == node::T || nodes[i]->type == node::D || nodes[i]->type == node::I) {
       node *m = nodes[i];
       gate_to_trans[m->netids[node::GATE]].push_back(i);
       term_to_trans[m->netids[node::T1]].push_back(i);
@@ -906,6 +992,8 @@ void state_t::build_equation(string &equation, vector<int> &constants, const vec
       equation += ' ';
     if(tr->type == node::T)
       equation += 'T';
+    else if(tr->type == node::I)
+      equation += 'I';
     else
       equation += 'D';
 

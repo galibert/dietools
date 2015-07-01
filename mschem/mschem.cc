@@ -614,10 +614,10 @@ public:
 
   int orientation;
   int trans;
-  bool depletion;
+  int ttype;
   double f;
 
-  mosfet(int trans, double f, bool depletion);
+  mosfet(int trans, double f, int ttype);
   virtual ~mosfet();
   point get_pos(int pin) const;
   void refine_position();
@@ -631,8 +631,8 @@ public:
   static int luaopen(lua_State *L);
   static int l_type(lua_State *L);
   static int l_tostring(lua_State *L);
-  static int l_depletion(lua_State *L);
-  static int l_set_depletion(lua_State *L);
+  static int l_ttype(lua_State *L);
+  static int l_set_ttype(lua_State *L);
 };
 
 class capacitor : public node {
@@ -1347,10 +1347,11 @@ int mosfet::l_type(lua_State *L)
 
 int mosfet::l_tostring(lua_State *L)
 {
+  static const char ttype_string[] = "tid";
   mosfet *mn = getparam(L, 1);
   const tinfo &ti = state->info.trans[mn->trans];
   char buf[4096];
-  sprintf(buf, "%c%d(%s, %s, %s, %f)", mn->depletion ? 'd' : 't', mn->trans, state->ninfo.net_name(ti.t1).c_str(), state->ninfo.net_name(ti.gate).c_str(), state->ninfo.net_name(ti.t2).c_str(), mn->f);
+  sprintf(buf, "%c%d(%s, %s, %s, %f)", ttype_string[mn->ttype], mn->trans, state->ninfo.net_name(ti.t1).c_str(), state->ninfo.net_name(ti.gate).c_str(), state->ninfo.net_name(ti.t2).c_str(), mn->f);
   lua_pushstring(L, buf);
   return 1;
 }
@@ -1374,17 +1375,19 @@ void mosfet::set_orientation(char orient, net *source)
   }
 }
 
-int mosfet::l_depletion(lua_State *L)
+int mosfet::l_ttype(lua_State *L)
 {
+  static const char *const ttype_string[] = { "t", "i", "d" };
   mosfet *m = getparam(L, 1);
-  lua_pushboolean(L, m->depletion);
+  lua_pushstring(L, ttype_string[m->ttype]);
   return 1;
 }
 
-int mosfet::l_set_depletion(lua_State *L)
+int mosfet::l_set_ttype(lua_State *L)
 {
   mosfet *m = getparam(L, 1);
-  m->depletion = lua_toboolean(L, 2);
+  const char *ttype = lua_tostring(L, 2);
+  m->ttype = ttype[0] == 'p' ? State::T_PMOS : ttype[0] == 'd' ? State::T_NDEPL : State::T_NMOS;
   return 0;
 }
 
@@ -1395,12 +1398,12 @@ int mosfet::luaopen(lua_State *L)
     { "pos",            l_pos           },
     { "move",           l_move          },
     { "type",           l_type          },
-    { "depletion",      l_depletion     },
+    { "ttype",          l_ttype         },
     { "t1",             l_t1            },
     { "t2",             l_t2            },
     { "gate",           l_gate          },
     { "set_name",       l_set_name      },
-    { "set_depletion",  l_set_depletion },
+    { "set_ttype",      l_set_ttype     },
     { }
   };
 
@@ -1408,11 +1411,11 @@ int mosfet::luaopen(lua_State *L)
   return 1;
 }
 
-mosfet::mosfet(int _trans, double _f, bool _depletion)
+mosfet::mosfet(int _trans, double _f, int _ttype)
 {
   trans = _trans;
   f = _f;
-  depletion = _depletion;
+  ttype = _ttype;
   orientation = W_S;
   const tinfo &ti = state->info.trans[trans];
   pos.x = ti.x / ratio;
@@ -1580,7 +1583,7 @@ void mosfet::to_svg(FILE *fd) const
     fprintf(fd, "    <path\n");
     fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
     fprintf(fd, "      d=\"m %d %d 0,4\" />\n", pos.x-1, pos.y-2);
-    if(depletion) {
+    if(ttype == State::T_NDEPL) {
       fprintf(fd, "    <rect\n");
       fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
       fprintf(fd, "      width=\"0.4\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x, pos.y-2);
@@ -1601,7 +1604,7 @@ void mosfet::to_svg(FILE *fd) const
     fprintf(fd, "    <path\n");
     fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
     fprintf(fd, "      d=\"m %d %d 0,4\" />\n", pos.x+1, pos.y-2);
-    if(depletion) {
+    if(ttype == State::T_NDEPL) {
       fprintf(fd, "    <rect\n");
       fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
       fprintf(fd, "      width=\"0.4\" height=\"4\" x=\"%d.6\" y=\"%d\" />\n", pos.x-1, pos.y-2);
@@ -1622,7 +1625,7 @@ void mosfet::to_svg(FILE *fd) const
     fprintf(fd, "    <path\n");
     fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
     fprintf(fd, "      d=\"m %d %d 4,0\" />\n", pos.x-2, pos.y-1);
-    if(depletion) {
+    if(ttype == State::T_NDEPL) {
       fprintf(fd, "    <rect\n");
       fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
       fprintf(fd, "      width=\"4\" height=\"0.4\" x=\"%d\" y=\"%d\" />\n", pos.x-2, pos.y);
@@ -1643,7 +1646,7 @@ void mosfet::to_svg(FILE *fd) const
     fprintf(fd, "    <path\n");
     fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
     fprintf(fd, "      d=\"m %d %d 4,0\" />\n", pos.x-2, pos.y+1);
-    if(depletion) {
+    if(ttype == State::T_NDEPL) {
       fprintf(fd, "    <rect\n");
       fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
       fprintf(fd, "      width=\"4\" height=\"0.4\" x=\"%d\" y=\"%d.6\" />\n", pos.x-2, pos.y-1);
@@ -1657,7 +1660,8 @@ void mosfet::to_svg(FILE *fd) const
 
 void mosfet::to_txt(FILE *fd) const
 {
-  fprintf(fd, "%c %d %d %d %d %d %g %d %s\n", depletion ? 'd' : 't', pos.x, sy1-pos.y, nets[T1]->nid, nets[GATE]->nid, nets[T2]->nid, f, orientation, oname.c_str());
+  static const char ttype_string[] = "tid";
+  fprintf(fd, "%c %d %d %d %d %d %g %d %s\n", ttype_string[ttype], pos.x, sy1-pos.y, nets[T1]->nid, nets[GATE]->nid, nets[T2]->nid, f, orientation, oname.c_str());
 }
 
 void mosfet::draw(patch &p, int ox, int oy) const
@@ -1675,7 +1679,7 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.vline(ox, oy, bx+10, by+20, by+40);
     p.hline(ox, oy, bx-40, bx-10, by);
     p.vline(ox, oy, bx-10, by-20, by+20);
-    if(depletion)
+    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
       p.rect(ox, oy, bx, by-20, bx+4, by+20);
     break;
 
@@ -1687,7 +1691,7 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.vline(ox, oy, bx-10, by+20, by+40);
     p.hline(ox, oy, bx+10, bx+40, by);
     p.vline(ox, oy, bx+10, by-20, by+20);
-    if(depletion)
+    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
       p.rect(ox, oy, bx-4, by-20, bx, by+20);
     break;
 
@@ -1699,7 +1703,7 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.hline(ox, oy, bx+20, bx+40, by+10);
     p.vline(ox, oy, bx, by-40, by-10);
     p.hline(ox, oy, bx-20, bx+20, by-10);
-    if(depletion)
+    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
       p.rect(ox, oy, bx-20, by, bx+20, by+4);
     break;
 
@@ -1711,7 +1715,7 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.hline(ox, oy, bx+20, bx+40, by-10);
     p.vline(ox, oy, bx, by+10, by+40);
     p.hline(ox, oy, bx-20, bx+20, by+10);
-    if(depletion)
+    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
       p.rect(ox, oy, bx-20, by-4, bx+20, by);
     break;
   }
@@ -2338,7 +2342,7 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
     if(i != state->info.trans.size()-1 && !((transinf[i] ^ transinf[i+1]) & 0xffffffffffff0000UL))
       continue;
 
-    mosfet *m = new mosfet(tid, f, state->depletion[tid]);
+    mosfet *m = new mosfet(tid, f, state->ttype[tid]);
     nodes.push_back(m);
     nodemap[state->info.trans[tid].t1].push_back(ref(m, T1));
     nodemap[state->info.trans[tid].t2].push_back(ref(m, T2));
@@ -2635,7 +2639,8 @@ int l_make_match(lua_State *L)
       node *n = *i;
       p += sprintf(p, "%s=", node_names[n].c_str());
       if(dynamic_cast<mosfet *>(n)) {
-	p += sprintf(p, "%s", static_cast<mosfet *>(n)->depletion ? "d" : "t");
+	static const char ttype_string[] = "tid";
+	p += sprintf(p, "%c", ttype_string[static_cast<mosfet *>(n)->ttype]);
 	gate_order = mosfet_gate_order;
       } else if(dynamic_cast<capacitor *>(n))
 	p += sprintf(p, "c");
@@ -2937,9 +2942,10 @@ int l_match(lua_State *L)
       goto next_non_alt_in_slot;
 
     bool compatible;
-    if(me.type == "t" || me.type == "d") {
+    if(me.type == "t" || me.type == "d" || me.type == "n") {
+      int ttype = me.type == "t" ? State::T_NMOS : me.type == "d" ? State::T_NDEPL : State::T_PMOS;
       mosfet *m = dynamic_cast<mosfet *>(n);
-      compatible = m && ((me.type == "t") ^ m->depletion);
+      compatible = m && (m->ttype == ttype);
 
     } else if(me.type == "c")
       compatible = dynamic_cast<capacitor *>(n);
@@ -3304,7 +3310,7 @@ int l_route(lua_State *L)
 
 int l_setup(lua_State *L)
 {
-  state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3));
+  state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3), lua_toboolean(L, 4));
   ratio = lua_tonumber(L, 5);
 
   sy1 = (state->info.sy-1)/ratio;

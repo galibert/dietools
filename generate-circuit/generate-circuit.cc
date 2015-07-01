@@ -514,6 +514,12 @@ void map_vias(time_info &tinfo, vector<via_info> &via_infos, via_map &via_maps, 
 	  fprintf(stderr, "via at (%d, %d) does not touch the metal\n", x, cmap.sy-1-y);
 	if(via.active_poly == -1)
 	  fprintf(stderr, "via at (%d, %d) does not touch poly or active\n", x, cmap.sy-1-y);
+
+	int yy = cmap.sy-1-y;
+	//	if(!(x >= 6000 && x < 6750 && yy >= 5000 && yy < 6500))
+	//	  continue;
+	if(0 && x > 6500 && x < 7000 && yy >= 6500 && yy < 7000)
+	  continue;
 	if(via.metal != -1 && via.active_poly != -1)
 	  via_infos.push_back(via);
       }
