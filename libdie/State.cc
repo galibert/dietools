@@ -43,10 +43,10 @@ State::State(const char *info_path, const char *cmap_path, const char *pins_path
   if(cmos) {
     for(unsigned int i=0; i != info.trans.size(); i++) {
       const tinfo &ti = info.trans[i];
-      if(ti.t1 == gnd || ti.t2 == gnd)
-	ttype[i] = T_NMOS;
-      else
+      if(ti.t1 == vcc || ti.t2 == vcc)
 	ttype[i] = T_PMOS;
+      else
+	ttype[i] = T_NMOS;
     }
   } else {
     for(unsigned int i=0; i != info.trans.size(); i++) {

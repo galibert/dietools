@@ -256,6 +256,10 @@ void SVDisplay::update_status()
   if((id & node::TYPE_MASK) == node::NET_MARK) {
     int pp = state.power[id & node::ID_MASK];
     p += sprintf(p, " %d.%dV", pp/10, pp%10);
+  } else {
+    node *nn = nodes[id & node::ID_MASK];
+    if(nn->type == node::T || nn->type == node::D || nn->type == node::I || nn->type == node::C)
+      p += sprintf(p, " %g", nn->type == node::C ? nn->f/160 : nn->f);
   }
   {
     int tp, ts;

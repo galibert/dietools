@@ -192,6 +192,7 @@ public:
   void vline(int ox, int oy, int x, int y1, int y2);
   void rect(int ox, int oy, int x1, int y1, int x2, int y2);
   void line(int ox, int oy, int x1, int y1, int x2, int y2);
+  void invert(int ox, int oy, int x, int y);
   void mipmap(const patch &p1, int dx, int dy);
   void bitmap_blend(int ox, int oy, const unsigned char *src, int src_w, int src_h, int x, int y);
 
@@ -331,6 +332,27 @@ void patch::rect(int ox, int oy, int x1, int y1, int x2, int y2)
   for(int y=y1; y <= y2; y++) {
     memset(p, 0, sx);
     p += PATCH_SX + 1;
+  }
+}
+
+void patch::invert(int ox, int oy, int x, int y)
+{
+  static const int pt_1[] = { 0, 4, 1, 4, 2, 3, 3, 2, 4, 1, 4, 0, 4, -1, 3, -2, 2, -3, 1, -4, 0, -4, -1, -4, -2, -3, -3, -2, -4, -1, -4, 0, -4, 1, -3, 2, -2, 3, -1, 4 };
+  const int *ptlist = pt_1;
+  int ptcount = sizeof(pt_1)/2/sizeof(int);
+  if(x < ox+4 || x >= ox + PATCH_SX - 4)
+    return;
+  if(y < oy+4 || y >= oy + PATCH_SY - 4)
+    return;
+
+  for(int i=0; i != ptcount; i++) {
+    int xx = x + ptlist[2*i];
+    int yy = y + ptlist[2*i+1];
+    if(xx < ox || xx >= ox + PATCH_SX)
+      continue;
+    if(yy < oy || yy >= oy + PATCH_SY)
+      continue;
+    *base(ox, oy, xx, yy) = 0;
   }
 }
 
@@ -599,6 +621,7 @@ public:
   point net_get_center(int pin) const;
   void move(int x, int y);
   virtual void set_orientation(char orient, net *source) = 0;
+  virtual void set_subtype(string subtype);
 
   static int l_pos(lua_State *L);
   static int l_move(lua_State *L);
@@ -625,6 +648,7 @@ public:
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
+  virtual void set_subtype(string subtype);
   static mosfet *checkparam(lua_State *L, int idx);
   static mosfet *getparam(lua_State *L, int idx);
   virtual const char *type_name() const;
@@ -886,6 +910,11 @@ void svg_close(FILE *fd)
 
 node::~node()
 {
+}
+
+void node::set_subtype(string subtype)
+{
+  abort();
 }
 
 point node::net_get_center(int pin) const
@@ -1367,12 +1396,24 @@ void mosfet::set_orientation(char orient, net *source)
   else if(orient == 'w')
     orientation = W_S;
   else
-    abort();  
+    abort();
   if(source == nets[T2])
     orientation |= 4;
   else {
     assert(source == nets[T1] || !source);
   }
+}
+
+void mosfet::set_subtype(string subtype)
+{
+  if(subtype == "t")
+    ttype = State::T_NMOS;
+  else if(subtype == "d")
+    ttype = State::T_NDEPL;
+  else if(subtype == "i")
+    ttype = State::T_PMOS;
+  else
+    abort();
 }
 
 int mosfet::l_ttype(lua_State *L)
@@ -1677,9 +1718,11 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.vline(ox, oy, bx, by-20, by+20);
     p.hline(ox, oy, bx, bx+10, by+20);
     p.vline(ox, oy, bx+10, by+20, by+40);
-    p.hline(ox, oy, bx-40, bx-10, by);
+    p.hline(ox, oy, bx-40, ttype == State::T_PMOS ? bx-19 : bx-10, by);
     p.vline(ox, oy, bx-10, by-20, by+20);
-    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
+    if(ttype == State::T_PMOS)
+      p.invert(ox, oy, bx-15, by);
+    if(ttype == State::T_NDEPL)
       p.rect(ox, oy, bx, by-20, bx+4, by+20);
     break;
 
@@ -1689,9 +1732,11 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.vline(ox, oy, bx, by-20, by+20);
     p.hline(ox, oy, bx-10, bx, by+20);
     p.vline(ox, oy, bx-10, by+20, by+40);
-    p.hline(ox, oy, bx+10, bx+40, by);
+    p.hline(ox, oy, ttype == State::T_PMOS ? bx+19 : bx+10, bx+40, by);
     p.vline(ox, oy, bx+10, by-20, by+20);
-    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
+    if(ttype == State::T_PMOS)
+      p.invert(ox, oy, bx+15, by);
+    if(ttype == State::T_NDEPL)
       p.rect(ox, oy, bx-4, by-20, bx, by+20);
     break;
 
@@ -1701,9 +1746,11 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.hline(ox, oy, bx-20, bx+20, by);
     p.vline(ox, oy, bx+20, by, by+10);
     p.hline(ox, oy, bx+20, bx+40, by+10);
-    p.vline(ox, oy, bx, by-40, by-10);
+    p.vline(ox, oy, bx, by-40, ttype == State::T_PMOS ? by-19 : by-10);
     p.hline(ox, oy, bx-20, bx+20, by-10);
-    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
+    if(ttype == State::T_PMOS)
+      p.invert(ox, oy, bx, by-15);
+    if(ttype == State::T_NDEPL)
       p.rect(ox, oy, bx-20, by, bx+20, by+4);
     break;
 
@@ -1713,9 +1760,11 @@ void mosfet::draw(patch &p, int ox, int oy) const
     p.hline(ox, oy, bx-20, bx+20, by);
     p.vline(ox, oy, bx+20, by-10, by);
     p.hline(ox, oy, bx+20, bx+40, by-10);
-    p.vline(ox, oy, bx, by+10, by+40);
+    p.vline(ox, oy, bx, ttype == State::T_PMOS ? by+19 : by+10, by+40);
     p.hline(ox, oy, bx-20, bx+20, by+10);
-    if(ttype == State::T_NDEPL || ttype == State::T_PMOS)
+    if(ttype == State::T_PMOS)
+      p.invert(ox, oy, bx, by+15);
+    if(ttype == State::T_NDEPL)
       p.rect(ox, oy, bx-20, by-4, bx+20, by);
     break;
   }
@@ -2190,10 +2239,8 @@ void net::to_txt(FILE *fd) const
   fprintf(fd, " %d", uc);
   for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
     if(i->second > 2) {
-      int bx = i->first & 65535;
-      int by = i->first >> 16;
       for(int j=0; j != np; j++)
-	if(pt[j].x == bx && pt[j].y == by) {
+	if(pt[j].y*65536+pt[j].x == i->first) {
 	  fprintf(fd, " %d", j);
 	  break;
 	}
@@ -3197,10 +3244,6 @@ int l_move(lua_State *L)
     if(p == move.end())
       break;
     if(*p != ',') {
-      while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
-	p++;
-      if(p == move.end())
-	break;
       q = p;
       while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
 	p++;
@@ -3223,6 +3266,20 @@ int l_move(lua_State *L)
 	}
       }
       n->set_orientation(*q, onet);
+      while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
+	p++;
+      if(p == move.end())
+	break;
+      if(*p != ',') {
+	while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
+	  p++;
+	if(p == move.end())
+	  break;
+	q = p;
+	while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
+	  p++;
+	n->set_subtype(string(q, p));
+      }
       while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
 	p++;
       if(p == move.end())
