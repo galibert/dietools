@@ -859,46 +859,17 @@ FILE *svg_open(const char *fname, int width, int height)
   }
 
   fprintf(fd, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
-  fprintf(fd, "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"%d\" height=\"%d\" id=\"svg1\"\n",
+  fprintf(fd, "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"%d\" height=\"%d\" id=\"svg1\"\n"
+	  "style=\"fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;font-family:Times New Roman\">\n",
           width, height);
-  fprintf(fd, "   xmlns:sodipodi=\"http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd\"\n");
-  fprintf(fd, "   xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\">\n");
-  fprintf(fd, "  <sodipodi:namedview\n");
-  fprintf(fd, "     pagecolor=\"#ffffff\"\n");
-  fprintf(fd, "     bordercolor=\"#666666\"\n");
-  fprintf(fd, "     borderopacity=\"1\"\n");
-  fprintf(fd, "     objecttolerance=\"10\"\n");
-  fprintf(fd, "     gridtolerance=\"10\"\n");
-  fprintf(fd, "     guidetolerance=\"10\"\n");
-  fprintf(fd, "     inkscape:pageopacity=\"0\"\n");
-  fprintf(fd, "     inkscape:pageshadow=\"2\"\n");
-  fprintf(fd, "     inkscape:window-width=\"%d\"\n", WX);
-  fprintf(fd, "     inkscape:window-height=\"%d\"\n", WY);
-  fprintf(fd, "     id=\"namedview109054\"\n");
-  fprintf(fd, "     showgrid=\"true\"\n");
-  fprintf(fd, "     inkscape:zoom=\"9.1286107\"\n");
-  fprintf(fd, "     inkscape:cx=\"5100.6202\"\n");
-  fprintf(fd, "     inkscape:cy=\"1742.8633\"\n");
-  fprintf(fd, "     inkscape:window-x=\"0\"\n");
-  fprintf(fd, "     inkscape:window-y=\"0\"\n");
-  fprintf(fd, "     inkscape:window-maximized=\"0\"\n");
-  fprintf(fd, "     inkscape:current-layer=\"svg1\">\n");
-  fprintf(fd, "    <inkscape:grid\n");
-  fprintf(fd, "       type=\"xygrid\"\n");
-  fprintf(fd, "       id=\"grid109060\"\n");
-  fprintf(fd, "       empspacing=\"5\"\n");
-  fprintf(fd, "       visible=\"true\"\n");
-  fprintf(fd, "       enabled=\"true\"\n");
-  fprintf(fd, "       snapvisiblegridlinesonly=\"true\" />\n");
-  fprintf(fd, "  </sodipodi:namedview>\n");
   return fd;
 }
 
 void svg_text(FILE *fd, point p, string text, int px, int size)
 {
   static const char *anchor[3] = { "start", "middle", "end" };
-  fprintf(fd, "  <text xml:space=\"preserve\" style=\"font-size:%dpx;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:%s;fill:#000000;fill-opacity:1;stroke:none;font-family:Times New Roman;-inkscape-font-specification:Sans\" x=\"%d\" y=\"%d\">\n", size, anchor[px+1], p.x, p.y);
-  fprintf(fd, "    <tspan x=\"%d\" y=\"%d\">%s</tspan>\n", p.x, p.y, text.c_str());
+  fprintf(fd, "  <text xml:space=\"preserve\" style=\"font-size:%dpx;text-anchor:%s;fill:#000000;stroke:none\" x=\"%d\" y=\"%d\">\n", size*10, anchor[px+1], p.x*10, p.y*10);
+  fprintf(fd, "    <tspan x=\"%d\" y=\"%d\">%s</tspan>\n", p.x*10, p.y*10, text.c_str());
   fprintf(fd, "  </text>\n");	  
 }
 
@@ -1123,28 +1094,14 @@ void power_node::to_svg(FILE *fd) const
 
   fprintf(fd, "  <g>\n");
   if(is_vcc) {
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,-1\" />\n", pos.x, pos.y);
-    fprintf(fd, "    <rect\n");
-    fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
-    fprintf(fd, "      width=\"2\" height=\"0.5\" x=\"%d\" y=\"%d.5\" />\n", pos.x-1, pos.y-2);
+    fprintf(fd, "    <path d=\"m %d %d 0,-10\" />\n", pos.x*10, pos.y*10);
+    fprintf(fd, "    <rect style=\"fill:#000000\" width=\"20\" height=\"5\" x=\"%d\" y=\"%d\" />\n", pos.x*10-10, pos.y*10-15);
   } else {
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,1\" />\n", pos.x, pos.y);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 2,0\" />\n", pos.x-1, pos.y+1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.3 %d.2 1.4,0\" />\n", pos.x-1, pos.y+1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.6 %d.4 0.8,0\" />\n", pos.x-1, pos.y+1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.9 %d.6 0.2,0\" />\n", pos.x-1, pos.y+1);
+    fprintf(fd, "    <path d=\"m %d %d 0,10\" />\n", pos.x*10, pos.y*10);
+    fprintf(fd, "    <path d=\"m %d %d 20,0\" />\n", pos.x*10-10, pos.y*10+10);
+    fprintf(fd, "    <path d=\"m %d %d 14,0\" />\n", pos.x*10-7, pos.y*10+12);
+    fprintf(fd, "    <path d=\"m %d %d 8,0\" />\n", pos.x*10-4, pos.y*10+14);
+    fprintf(fd, "    <path d=\"m %d %d 2,0\" />\n", pos.x*10-1, pos.y*10+16);
   }
   fprintf(fd, "  </g>\n");
 }
@@ -1267,27 +1224,19 @@ void pad::to_svg(FILE *fd) const
   point pt = pos;
   switch(orientation & 3) {
   case W_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d -4,0 0,10 -20,0 0,-20 20,0 0,10\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d -40,0 0,100 -200,0 0,-200 200,0 0,100\" />\n", pos.x*10, pos.y*10);
     pt.x -= 14;
     break;
   case E_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 4,0 0,10 20,0 0,-20 -20,0 0,10\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d 40,0 0,100 200,0 0,-200 -200,0 0,100\" />\n", pos.x*10, pos.y*10);
     pt.x += 14;
     break;
   case N_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,-4 10,0 0,-20 -20,0 0,20 10,0\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d 0,-40 100,0 0,-200 -200,0 0,200 100,0\" />\n", pos.x*10, pos.y*10);
     pt.y -= 14;
     break;
   case S_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,4 10,0 0,20 -20,0 0,-20 10,0\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d 0,40 100,0 0,200 -200,0 0,-200 100,0\" />\n", pos.x*10, pos.y*10);
     pt.y += 14;
     break;
   }
@@ -1610,88 +1559,40 @@ void mosfet::to_svg(FILE *fd) const
   fprintf(fd, "  <g id=\"trans-%d\">\n", trans);
   switch(orientation & 3) {
   case W_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,2 -1,0 0,4 1,0 0,2\" />\n", pos.x+1, pos.y-4);
-    if(0) {
-      fprintf(fd, "    <path\n");
-      fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-      fprintf(fd, "      d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x+3, pos.y);
-    }
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 3,0\" />\n", pos.x-4, pos.y);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,4\" />\n", pos.x-1, pos.y-2);
-    if(ttype == State::T_NDEPL) {
-      fprintf(fd, "    <rect\n");
-      fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
-      fprintf(fd, "      width=\"0.4\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x, pos.y-2);
-    }
+    fprintf(fd, "    <path d=\"m %d %d 0,20 -10,0 0,40 10,0 0,20\" />\n", pos.x*10+10, pos.y*10-40);
+    if(ttype == State::T_PMOS)
+      fprintf(fd, "    <path d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x*10-10, pos.y*10);
+    fprintf(fd, "    <path d=\"m %d %d %d,0\" />\n", pos.x*10-40, pos.y*10, ttype == State::T_PMOS ? 24 : 30);
+    fprintf(fd, "    <path d=\"m %d %d 0,40\" />\n", pos.x*10-10, pos.y*10-20);
+    if(ttype == State::T_NDEPL)
+      fprintf(fd, "    <rect style=\"fill:#000000\" width=\"4\" height=\"40\" x=\"%d\" y=\"%d\" />\n", pos.x*10, pos.y*10-20);
     break;
   case E_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,2 1,0 0,4 -1,0 0,2\" />\n", pos.x-1, pos.y-4);
-    if(0) {
-      fprintf(fd, "    <path\n");
-      fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-      fprintf(fd, "      d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x+3, pos.y);
-    }
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d -3,0\" />\n", pos.x+4, pos.y);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,4\" />\n", pos.x+1, pos.y-2);
-    if(ttype == State::T_NDEPL) {
-      fprintf(fd, "    <rect\n");
-      fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
-      fprintf(fd, "      width=\"0.4\" height=\"4\" x=\"%d.6\" y=\"%d\" />\n", pos.x-1, pos.y-2);
-    }
+    fprintf(fd, "    <path d=\"m %d %d 0,20 10,0 0,40 -10,0 0,20\" />\n", pos.x*10-10, pos.y*10-40);
+    if(ttype == State::T_PMOS)
+      fprintf(fd, "    <path d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x*10+16, pos.y*10);
+    fprintf(fd, "    <path d=\"m %d %d %d,0\" />\n", pos.x*10+40, pos.y*10, ttype == State::T_PMOS ? -24 : -30);
+    fprintf(fd, "    <path d=\"m %d %d 0,40\" />\n", pos.x*10+10, pos.y*10-20);
+    if(ttype == State::T_NDEPL)
+      fprintf(fd, "    <rect style=\"fill:#000000\" width=\"4\" height=\"40\" x=\"%d\" y=\"%d\" />\n", pos.x*10-4, pos.y*10-20);
     break;
   case N_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 2,0 0,-1 4,0 0,1 2,0\" />\n", pos.x-4, pos.y+1);
-    if(0) {
-      fprintf(fd, "    <path\n");
-      fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-      fprintf(fd, "      d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x+3, pos.y);
-    }
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,3\" />\n", pos.x, pos.y-4);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 4,0\" />\n", pos.x-2, pos.y-1);
-    if(ttype == State::T_NDEPL) {
-      fprintf(fd, "    <rect\n");
-      fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
-      fprintf(fd, "      width=\"4\" height=\"0.4\" x=\"%d\" y=\"%d\" />\n", pos.x-2, pos.y);
-    }
+    fprintf(fd, "    <path d=\"m %d %d 20,0 0,-10 40,0 0,10 20,0\" />\n", pos.x*10-40, pos.y*10+10);
+    if(ttype == State::T_PMOS)
+      fprintf(fd, "    <path d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x*10+3, pos.y*10-13);
+    fprintf(fd, "    <path d=\"m %d %d 0,%d\" />\n", pos.x*10, pos.y*10-40, ttype == State::T_PMOS ? 24 : 30);
+    fprintf(fd, "    <path d=\"m %d %d 40,0\" />\n", pos.x*10-20, pos.y*10-10);
+    if(ttype == State::T_NDEPL)
+      fprintf(fd, "    <rect style=\"fill:#000000\" width=\"40\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x*10-20, pos.y*10);
     break;
   case S_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 2,0 0,1 4,0 0,-1 2,0\" />\n", pos.x-4, pos.y-1);
-    if(0) {
-      fprintf(fd, "    <path\n");
-      fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-      fprintf(fd, "      d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x+3, pos.y);
-    }
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,-3\" />\n", pos.x, pos.y+4);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 4,0\" />\n", pos.x-2, pos.y+1);
-    if(ttype == State::T_NDEPL) {
-      fprintf(fd, "    <rect\n");
-      fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.1px;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0\"\n");
-      fprintf(fd, "      width=\"4\" height=\"0.4\" x=\"%d\" y=\"%d.6\" />\n", pos.x-2, pos.y-1);
-    }
+    fprintf(fd, "    <path d=\"m %d %d 20,0 0,10 40,0 0,-10 20,0\" />\n", pos.x*10-40, pos.y*10-10);
+    if(ttype == State::T_PMOS)
+      fprintf(fd, "    <path d=\"m %d %d c 0,1.656855 -1.343146,3 -3,3 -1.656854,0 -3,-1.343145 -3,-3 0,-1.656854 1.343146,-3 3,-3 1.656854,0 3,1.343146 3,3 z\" />\n", pos.x*10+3, pos.y*10+13);
+    fprintf(fd, "    <path d=\"m %d %d 0,%d\" />\n", pos.x*10, pos.y*10+40, ttype == State::T_PMOS ? -24 : -30);
+    fprintf(fd, "    <path d=\"m %d %d 40,0\" />\n", pos.x*10-20, pos.y*10+10);
+    if(ttype == State::T_NDEPL)
+      fprintf(fd, "    <rect style=\"fill:#000000 width=\"40\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x*10-20, pos.y*10-4);
     break;
   default:
     abort();
@@ -1928,32 +1829,16 @@ void capacitor::to_svg(FILE *fd) const
   fprintf(fd, "  <g id=\"caps-%d\">\n", circ);
   switch(orientation & 3) {
   case W_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.8 %d 0,2\" />\n", pos.x-1, pos.y-1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.2 %d 0,2\" />\n", pos.x, pos.y-1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0.8,0\" />\n", pos.x-1, pos.y);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d.2 %d 0.8,0\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d 0,20\" />\n", pos.x*10-2, pos.y*10-10);
+    fprintf(fd, "    <path d=\"m %d %d 0,20\" />\n", pos.x*10+2, pos.y*10-10);
+    fprintf(fd, "    <path d=\"m %d %d 8,0\" />\n", pos.x*10-10, pos.y*10);
+    fprintf(fd, "    <path d=\"m %d %d 8,0\" />\n", pos.x*1+2, pos.y*10);
     break;
   case N_S:
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d.8 2,0\" />\n", pos.x-1, pos.y-1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d.2 2,0\" />\n", pos.x-1, pos.y);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d 0,0.8\" />\n", pos.x, pos.y-1);
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"m %d %d.2 0,0.8\" />\n", pos.x, pos.y);
+    fprintf(fd, "    <path d=\"m %d %d 2,0\" />\n", pos.x*10-10, pos.y*10-2);
+    fprintf(fd, "    <path d=\"m %d %d 2,0\" />\n", pos.x*10-10, pos.y*10+2);
+    fprintf(fd, "    <path d=\"m %d %d 0,8\" />\n", pos.x*10, pos.y*10-10);
+    fprintf(fd, "    <path d=\"m %d %d 0,8\" />\n", pos.x*10, pos.y*10+2);
     break;
   }
   fprintf(fd, "  </g>\n");
@@ -2183,18 +2068,15 @@ void net::to_svg(FILE *fd) const
   for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
-    fprintf(fd, "    <path\n");
-    fprintf(fd, "      style=\"fill:none;stroke:#000000;stroke-width:0.1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1\"\n");
-    fprintf(fd, "      d=\"M %d %d %d %d\" />\n", pt[i->first].x, pt[i->first].y, pt[i->second].x, pt[i->second].y);
+    fprintf(fd, "    <path d=\"M %d %d %d %d\" />\n", pt[i->first].x*10, pt[i->first].y*10, pt[i->second].x*10, pt[i->second].y*10);
     use_count[pt[i->first].y*65536 + pt[i->first].x]++;
     use_count[pt[i->second].y*65536 + pt[i->second].x]++;
   }
   for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
-    if(i->second > 2) {
-      fprintf(fd, "    <path\n");
-      fprintf(fd, "      style=\"fill:#000000;fill-opacity:1;stroke:none\"\n");
-      fprintf(fd, "     d=\"m %d.3,%d a 0.3,0.3 0 1 1 -0.6,0 0.3,0.3 0 1 1 0.6,0 z\" />\n", i->first & 65535, i->first >> 16);
-    }
+    if(i->second > 2)
+      for(int j=0; j != np; j++)
+	if(pt[j].y*65536+pt[j].x == i->first)
+	  fprintf(fd, "    <path style=\"fill:#000000;stroke:none\" d=\"m %d,%d a 3,3 0 1 1 -6,0 3,3 0 1 1 6,0 z\" />\n", 10*pt[j].x+3, 10*pt[j].y);
   fprintf(fd, "  </g>\n");
 }
 
@@ -3474,7 +3356,7 @@ int main(int argc, char **argv)
   build_net_links(nets);
 
   if(opt_svg) {
-    FILE *fd = svg_open(opt_svg, state->info.sx / ratio, state->info.sy / ratio);
+    FILE *fd = svg_open(opt_svg, state->info.sx / ratio * 10, state->info.sy / ratio * 10);
     for(unsigned int i=0; i != nodes.size(); i++)
       nodes[i]->to_svg(fd);
     for(unsigned int i=0; i != nets.size(); i++)
