@@ -1428,7 +1428,7 @@ int mosfet::l_set_ttype(lua_State *L)
 {
   mosfet *m = getparam(L, 1);
   const char *ttype = lua_tostring(L, 2);
-  m->ttype = ttype[0] == 'p' ? State::T_PMOS : ttype[0] == 'd' ? State::T_NDEPL : State::T_NMOS;
+  m->ttype = ttype[0] == 'i' ? State::T_PMOS : ttype[0] == 'd' ? State::T_NDEPL : State::T_NMOS;
   return 0;
 }
 
