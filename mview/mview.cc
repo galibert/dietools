@@ -29,8 +29,18 @@ int main(int argc, char **argv)
   map_file = rd.gw();
   layers_file = rd.gw();
   pins_file = rd.gw();
+  bool cmos;
+  const char *mode = rd.gw();
+  if(!strcmp(mode, "nmos"))
+    cmos = false;
+  else if(!strcmp(mode, "cmos"))
+    cmos = true;
+  else {
+    fprintf(stderr, "Mode [%s] unknown\n", mode);
+    exit(1);
+  }    
 
-  state = new State(layers_file, map_file, pins_file);
+  state = new State(layers_file, map_file, pins_file, cmos);
 
   QApplication app(argc, argv);
   MVMain mv;

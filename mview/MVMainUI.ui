@@ -56,7 +56,7 @@
      <x>0</x>
      <y>0</y>
      <width>487</width>
-     <height>20</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -75,7 +75,7 @@
    </widget>
    <widget class="QMenu" name="menuLayers">
     <property name="title">
-     <string>Layers</string>
+     <string>&amp;Layers</string>
     </property>
     <addaction name="actionActive"/>
     <addaction name="actionPoly"/>
@@ -85,7 +85,7 @@
    </widget>
    <widget class="QMenu" name="menuSimulation">
     <property name="title">
-     <string>Simulation</string>
+     <string>Si&amp;mulation</string>
     </property>
     <addaction name="actionReset_to_floating"/>
     <addaction name="actionReset_to_zero"/>
@@ -219,7 +219,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Levels</string>
+    <string>&amp;Levels</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+L</string>
@@ -227,12 +227,12 @@
   </action>
   <action name="actionReset_to_floating">
    <property name="text">
-    <string>Reset to floating</string>
+    <string>&amp;Reset to floating</string>
    </property>
   </action>
   <action name="actionReset_to_zero">
    <property name="text">
-    <string>Reset to zero</string>
+    <string>Reset to &amp;zero</string>
    </property>
   </action>
  </widget>
@@ -261,7 +261,7 @@
  <connections>
   <connection>
    <sender>action_Quit</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>MVMainUI</receiver>
    <slot>close()</slot>
    <hints>
@@ -277,7 +277,7 @@
   </connection>
   <connection>
    <sender>action_Fit_to_window</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>fit_to_window()</slot>
    <hints>
@@ -293,7 +293,7 @@
   </connection>
   <connection>
    <sender>actionZoom_In</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>zoom_in()</slot>
    <hints>
@@ -309,7 +309,7 @@
   </connection>
   <connection>
    <sender>actionZoom_Out</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>display_widget</receiver>
    <slot>zoom_out()</slot>
    <hints>
@@ -453,7 +453,7 @@
   </connection>
   <connection>
    <sender>actionReset_to_floating</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>MVMainUI</receiver>
    <slot>reset_to_floating()</slot>
    <hints>
@@ -469,7 +469,7 @@
   </connection>
   <connection>
    <sender>actionReset_to_zero</sender>
-   <signal>activated()</signal>
+   <signal>triggered()</signal>
    <receiver>MVMainUI</receiver>
    <slot>reset_to_zero()</slot>
    <hints>

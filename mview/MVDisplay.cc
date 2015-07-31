@@ -114,7 +114,7 @@ void MVDisplay::generate_image()
 	col = alpha(col, 0xff0000, inside_poly ? levels_on ? transp_per_level[power_poly] : 0.135 : 1);
       }
       if((active_on || poly_on) && type_active == 't') {
-	if(state->depletion[state->info.circs[circ_active].trans])
+	if(state->ttype[state->info.circs[circ_active].trans] != State::T_NMOS)
 	  col = 0x008000;
 	else
 	  col = levels_on && power_active == State::S_1 ? 0xffc040 : 0xff8000;
@@ -266,6 +266,8 @@ void MVDisplay::set_levels(bool state)
 
 void MVDisplay::hscroll(int pos)
 {
+  if(!posx)
+    return;
   xc = pos;
   regen_pos();
   generate_image();
@@ -274,6 +276,8 @@ void MVDisplay::hscroll(int pos)
 
 void MVDisplay::vscroll(int pos)
 {
+  if(!posx)
+    return;
   yc = pos;
   regen_pos();
   generate_image();

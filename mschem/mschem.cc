@@ -3249,7 +3249,7 @@ int l_route(lua_State *L)
 
 int l_setup(lua_State *L)
 {
-  state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3), lua_toboolean(L, 4));
+  state = new State(lua_tostring(L, 2), lua_tostring(L, 1), lua_tostring(L, 3), lua_toboolean(L, 6));
   ratio = lua_tonumber(L, 5);
 
   sy1 = (state->info.sy-1)/ratio;

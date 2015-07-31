@@ -1,7 +1,7 @@
 #ifndef MVDISPLAY_H
 #define MVDISPLAY_H
 
-#include <QtGui/QWidget>
+#include <QtWidgets/QWidget>
 #include <vector>
 #include <string>
 

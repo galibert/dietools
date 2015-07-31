@@ -1,5 +1,5 @@
-ALLINC = -I../libdie `pkg-config --cflags QtGui`
-ALLLIB = -L../libdie -ldie `pkg-config --libs QtGui`
+ALLINC = -I../libdie `pkg-config --cflags Qt5Gui` `pkg-config --cflags Qt5Widgets`
+ALLLIB = -L../libdie -ldie `pkg-config --libs Qt5Gui` `pkg-config --libs Qt5Widgets`
 DEPLIB = ../libdie/libdie.a
 
 PROG = mview
