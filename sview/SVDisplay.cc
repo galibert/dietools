@@ -252,7 +252,7 @@ void SVDisplay::update_status()
     ids += w;
   }
   char msg[4096];
-  char *p = msg + sprintf(msg, "%5d %5d %s", (x0+x)/10, state.sy-(y0+y)/10, id_to_name(id).c_str());
+  char *p = msg + sprintf(msg, "%5d %5d (%5d %5d) %s", (x0+x)/10, state.sy-(y0+y)/10, int(state.ratio*(x0+x)/10), int(state.ratio*(state.sy-(y0+y)/10)), id_to_name(id).c_str());
   if((id & node::TYPE_MASK) == node::NET_MARK) {
     int pp = state.power[id & node::ID_MASK];
     p += sprintf(p, " %d.%dV", pp/10, pp%10);
