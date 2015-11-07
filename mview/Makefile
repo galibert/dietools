@@ -16,7 +16,7 @@ OPT=-O9
 
 CC=gcc
 CXX=g++
-CFLAGS=-g -Wall -Wno-unused-parameter ${OPT}
+CFLAGS=-g -fPIC -Wall -Wno-unused-parameter ${OPT}
 
 all: ${PROG}
 

@@ -955,8 +955,8 @@ void node::move(int x, int y)
 int node::l_pos(lua_State *L)
 {
   node *n = static_cast<node *>(getparam_any(L, 1));
-  lua_pushnumber(L, n->pos.x);
-  lua_pushnumber(L, sy1 - n->pos.y);
+  lua_pushinteger(L, n->pos.x);
+  lua_pushinteger(L, sy1 - n->pos.y);
   return 2;
 }
 
@@ -1220,7 +1220,7 @@ void pad::to_svg(FILE *fd) const
   if(!in_limit(pos))
     return;
 
-  fprintf(fd, "  <g id=\"pad=%s\">\n", name.c_str());
+  fprintf(fd, "  <g id=\"pad=%s\"><desc>%s</desc>\n", name.c_str(), name.c_str());
   point pt = pos;
   switch(orientation & 3) {
   case W_S:
@@ -1556,7 +1556,7 @@ void mosfet::to_svg(FILE *fd) const
   if(!in_limit(pos))
     return;
 
-  fprintf(fd, "  <g id=\"trans-%d\">\n", trans);
+  fprintf(fd, "  <g id=\"trans-%d\"><desc>%g</desc>\n", trans, f);
   switch(orientation & 3) {
   case W_S:
     fprintf(fd, "    <path d=\"m %d %d 0,20 -10,0 0,40 10,0 0,20\" />\n", pos.x*10+10, pos.y*10-40);
@@ -1748,7 +1748,6 @@ capacitor::capacitor(int _circ, double _f)
   char nn[32];
   sprintf(nn, "c%d", circ);
   oname = nn;
-
   nets.resize(2);
   nettypes.resize(2);
   nettypes[T1] = get_nettype(ci.net);
@@ -1826,7 +1825,7 @@ void capacitor::to_svg(FILE *fd) const
   if(!in_limit(pos))
     return;
 
-  fprintf(fd, "  <g id=\"caps-%d\">\n", circ);
+  fprintf(fd, "  <g id=\"caps-%d\"><desc>%g</desc>\n", circ, f);
   switch(orientation & 3) {
   case W_S:
     fprintf(fd, "    <path d=\"m %d %d 0,20\" />\n", pos.x*10-2, pos.y*10-10);
@@ -1835,8 +1834,8 @@ void capacitor::to_svg(FILE *fd) const
     fprintf(fd, "    <path d=\"m %d %d 8,0\" />\n", pos.x*1+2, pos.y*10);
     break;
   case N_S:
-    fprintf(fd, "    <path d=\"m %d %d 2,0\" />\n", pos.x*10-10, pos.y*10-2);
-    fprintf(fd, "    <path d=\"m %d %d 2,0\" />\n", pos.x*10-10, pos.y*10+2);
+    fprintf(fd, "    <path d=\"m %d %d 20,0\" />\n", pos.x*10-10, pos.y*10-2);
+    fprintf(fd, "    <path d=\"m %d %d 20,0\" />\n", pos.x*10-10, pos.y*10+2);
     fprintf(fd, "    <path d=\"m %d %d 0,8\" />\n", pos.x*10, pos.y*10-10);
     fprintf(fd, "    <path d=\"m %d %d 0,8\" />\n", pos.x*10, pos.y*10+2);
     break;
@@ -2064,7 +2063,7 @@ void net::to_svg(FILE *fd) const
   for(unsigned int i = 0; i != routes.size(); i++)
     pt[i+nodes.size()] = routes[i];
 
-  fprintf(fd, "  <g id=\"%s\">\n", state->ninfo.net_name(id).c_str());
+  fprintf(fd, "  <g id=\"%s\"><desc>%s</desc>\n", state->ninfo.net_name(id).c_str(), oname.c_str());
   for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
@@ -2170,18 +2169,29 @@ void net::draw(patch &p, int ox, int oy) const
 
 void draw(const char *format, const vector<node *> &nodes, const vector<net *> &nets)
 {
-  time_info tinfo;
-  start(tinfo, "generating images");
+  unsigned int limx = int(state->info.sx / ratio)*10/PATCH_SX;
+  unsigned int limy = int(state->info.sy / ratio)*10/PATCH_SY;
 
-  patch *levels = new patch[8];
+  unsigned int maxlim = limx > limy ? limx : limy;
+  unsigned int limp = 1;
+  while(maxlim > 0) {
+    limp++;
+    maxlim = maxlim >> 1;
+  }
+
+  char msg[4096];
+  sprintf(msg, "generating images, %d levels", limp);
+  time_info tinfo;
+  start(tinfo, msg);
+
+  unsigned int plim = 1 << (2*limp-2);
+  patch *levels = new patch[limp];
   unsigned int nno = nodes.size();
   unsigned int nne = nets.size();
   int id = 0;
-  unsigned int limx = int(state->info.sx / ratio)*10/PATCH_SX;
-  unsigned int limy = int(state->info.sy / ratio)*10/PATCH_SY;
-  for(unsigned int i=0; i<16384; i++) {
+  for(unsigned int i=0; i<plim; i++) {
     unsigned int x0 = 0, y0 = 0;
-    for(unsigned int j=0; j<8; j++) {
+    for(unsigned int j=0; j<limp; j++) {
       if(i & (1 << (2*j)))
 	x0 |= 1 << j;
       if(i & (2 << (2*j)))
@@ -2202,7 +2212,7 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
     bool last_y = y0 == limy;
     unsigned int x1 = x0;
     unsigned int y1 = y0;
-    for(int level = 1; level < 8; level++) {
+    for(unsigned int level = 1; level < limp; level++) {
       levels[level].mipmap(levels[level-1], x1 & 1, y1 & 1);
       if(!((last_x || (x1 & 1)) && (last_y || (y1 & 1))))
 	break;
@@ -2211,9 +2221,9 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
     }
     x1 = x0;
     y1 = y0;
-    for(int level = 0; level < 8; level++) {
+    for(unsigned int level = 0; level < limp; level++) {
       char name[4096];
-      sprintf(name, format, 7-level, y1, x1);
+      sprintf(name, format, limp-1-level, y1, x1);
       levels[level].save_png(name);
       levels[level].clear();
       if(!((last_x || (x1 & 1)) && (last_y || (y1 & 1))))
@@ -2258,7 +2268,7 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
       id = (((unsigned long)(ti.t1)) << 48) | (((unsigned long)(ti.t2)) << 32);
     else
       id = (((unsigned long)(ti.t2)) << 48) | (((unsigned long)(ti.t1)) << 32);
-    id |= (ti.gate << 16) | i;
+    id |= (ti.gate << 20) | i;
     transinf.push_back(id);
   }
 
@@ -2266,9 +2276,9 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 
   double f = 0;
   for(unsigned int i=0; i != state->info.trans.size(); i++) {
-    int tid = transinf[i] & 0xffff;
+    int tid = transinf[i] & 0xfffff;
     f += state->info.trans[tid].f;
-    if(i != state->info.trans.size()-1 && !((transinf[i] ^ transinf[i+1]) & 0xffffffffffff0000UL))
+    if(i != state->info.trans.size()-1 && !((transinf[i] ^ transinf[i+1]) & 0xfffffffffff00000UL))
       continue;
 
     mosfet *m = new mosfet(tid, f, state->ttype[tid]);
@@ -2300,7 +2310,7 @@ void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 
   double f = 0;
   for(unsigned int i=0; i != capsinf.size(); i++) {
-    int cid = capsinf[i] & 0xffff;
+    int cid = capsinf[i] & 0xffffffff;
     f += state->info.circs[cid].surface;
     if(i != capsinf.size()-1 && !((capsinf[i] ^ capsinf[i+1]) & 0xffffffffffff0000UL))
       continue;
