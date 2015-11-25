@@ -1592,7 +1592,7 @@ void mosfet::to_svg(FILE *fd) const
     fprintf(fd, "    <path d=\"m %d %d 0,%d\" />\n", pos.x*10, pos.y*10+40, ttype == State::T_PMOS ? -24 : -30);
     fprintf(fd, "    <path d=\"m %d %d 40,0\" />\n", pos.x*10-20, pos.y*10+10);
     if(ttype == State::T_NDEPL)
-      fprintf(fd, "    <rect style=\"fill:#000000 width=\"40\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x*10-20, pos.y*10-4);
+      fprintf(fd, "    <rect style=\"fill:#000000\" width=\"40\" height=\"4\" x=\"%d\" y=\"%d\" />\n", pos.x*10-20, pos.y*10-4);
     break;
   default:
     abort();
