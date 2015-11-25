@@ -8,15 +8,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <librsvg/rsvg.h>
-//#include <librsvg/rsvg-cairo.h>
-#include <cairo.h>
-
 #include <vector>
 #include <string>
 #include <map>
 
 #include <reader.h>
+
+#include "nanosvg.h"
+#include "nanosvgrast.h"
 
 using namespace std;
 
@@ -38,13 +37,13 @@ static int iabs(int v)
 
 void test_pixel_blue(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(iabs(src[3] - src[0]) > 5 || src[1] != src[2])
+  if(src[0] || src[1])
     bad_pixel(layer, pix, p2, src);
 }
 
 void test_pixel_red(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(iabs(src[3] - src[2]) > 10 || src[0] != src[1])
+  if(src[1] || src[2])
     bad_pixel(layer, pix, p2, src);
 }
 
@@ -56,7 +55,7 @@ void test_pixel_black(const char *layer, int pix, int p2, const unsigned char *s
 
 void test_pixel_pink(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(src[2] != src[3] || src[1] || src[0] != src[3])
+  if(src[1] || !src[0] || src[0] != src[2])
     bad_pixel(layer, pix, p2, src);
 }
 
@@ -68,13 +67,13 @@ void test_pixel_vias(const char *layer, int pix, int p2, const unsigned char *sr
 
 void test_pixel_green(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(src[0] != src[2])
+  if(src[0] || src[2])
     bad_pixel(layer, pix, p2, src);
 }
 
 void test_pixel_yellow(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(src[1] != src[3] || src[0] || src[2] != src[3])
+  if(src[0] || !src[2] || src[2] != src[3])
     bad_pixel(layer, pix, p2, src);
 }
 
@@ -127,8 +126,9 @@ int main(int argc, char **argv)
   int size = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
 
-  svg.resize(size);
+  svg.resize(size+1);
   read(fd, &svg[0], size);
+  svg[size] = 0;
   close(fd);
 
   for(int pos=0; pos < int(svg.size()) - 32; pos++) {
@@ -155,9 +155,9 @@ int main(int argc, char **argv)
     }
   }
 
-  rsvg_set_default_dpi(72.0);
-  cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, sx, sy);
-  cairo_t *cr = cairo_create(surface);
+  unsigned char *out = new unsigned char[sx*sy*4];
+  NSVGrasterizer *rast = nsvgCreateRasterizer();
+
   while(!rd.eof()) {
     const char *image_name = rd.gw();
     const char *test_name = rd.gw();
@@ -169,30 +169,14 @@ int main(int argc, char **argv)
     for(map<string, int>::const_iterator j = layer_offsets.begin(); j != layer_offsets.end(); j++)
       memcpy(&svg[j->second], j->first == layer_name ? "inline\"" : "none\"  ", 7);
 
-    GError *error = NULL;
-    RsvgHandle *handle = rsvg_handle_new_with_flags(RSVG_HANDLE_FLAG_UNLIMITED);
-    
-    rsvg_handle_write(handle, (const guint8 *)&svg[0], svg.size(), &error);
-    rsvg_handle_close(handle, &error);
-    if(error != NULL) {
-      fprintf(stderr, "rvsg parsing failure %s\n", error->message);
-      exit(1);
-    }
-    cairo_save (cr);
-    cairo_set_source_rgba (cr, 0, 0, 0, 0);
-    cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-    cairo_paint (cr);
-    cairo_restore (cr);
-    rsvg_handle_render_cairo(handle, cr);
+    char *s = strdup(&svg[0]);
+    NSVGimage *svgimg = nsvgParse(s, "px", 72);
+    free(s);
 
-    cairo_status_t status = cairo_status(cr);
-    if(status) {
-      fprintf(stderr, "Cairo failure: %s\n", cairo_status_to_string(status));
-      exit(1);
-    }
+    nsvgRasterize(rast, svgimg, 0, 0, 1, out, sx, sy, sx*4);
+    nsvgDelete(svgimg);
 
-    cairo_surface_flush(surface);
-    const unsigned char *src = cairo_image_surface_get_data(surface);
+    unsigned char *src = out;
     unsigned char *dst = &pbm[off];
 
     void (*test_pixel)(const char *layer, int, int, const unsigned char *) = NULL;
@@ -232,12 +216,10 @@ int main(int argc, char **argv)
 
     write(fd, &pbm[0], pbm.size());
     close(fd);
-
-    rsvg_handle_close(handle, &error);
   }
 
-  cairo_destroy(cr);
-  cairo_surface_destroy(surface);
+  delete[] out;
+  nsvgDeleteRasterizer(rast);
 
   return 0;
 }

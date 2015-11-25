@@ -1,11 +1,11 @@
-ALLINC = -I../libdie  -I/usr/include/librsvg-2.0 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/cairo -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/usr/include/pixman-1
-ALLLIB = -L../libdie -ldie -lrsvg-2 -lm -lgio-2.0 -lgdk_pixbuf-2.0 -lgobject-2.0 -lglib-2.0 -lcairo
+ALLINC = -I../libdie
+ALLLIB = -L../libdie -ldie
 
 DEPLIB = ../libdie/libdie.a
 
 PROG = generate-bitmask-images
-OBJS = generate-bitmask-images.o
-SRCS = generate-bitmask-images.cc
+OBJS = nanosvg.o generate-bitmask-images-2.o nanosvgrast.o
+SRCS = nanosvg.c generate-bitmask-images-2.cc nanosvgrast.c nanosvg.cc
 JUNK =
 
 OBJS2 = main.o asrlib.o
@@ -44,3 +44,6 @@ distclean:
 	rm -f ${OBJS} ${PROG}
 
 ###
+nanosvg.o: nanosvg.h
+generate-bitmask-images-2.o: nanosvg.h nanosvgrast.h
+nanosvgrast.o: nanosvgrast.h
