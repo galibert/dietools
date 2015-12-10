@@ -4,8 +4,8 @@ ALLLIB = -L../libdie -ldie
 DEPLIB = ../libdie/libdie.a
 
 PROG = generate-bitmask-images
-OBJS = nanosvg.o generate-bitmask-images-2.o nanosvgrast.o
-SRCS = nanosvg.c generate-bitmask-images-2.cc nanosvgrast.c nanosvg.cc
+OBJS = generate-bitmask-images.o nanosvg.o nanosvgrast.o
+SRCS = generate-bitmask-images.cc nanosvg.c nanosvgrast.c
 JUNK =
 
 OBJS2 = main.o asrlib.o
@@ -44,6 +44,6 @@ distclean:
 	rm -f ${OBJS} ${PROG}
 
 ###
+generate-bitmask-images.o: nanosvg.h nanosvgrast.h
 nanosvg.o: nanosvg.h
-generate-bitmask-images-2.o: nanosvg.h nanosvgrast.h
-nanosvgrast.o: nanosvgrast.h
+nanosvgrast.o: nanosvg.h nanosvgrast.h
