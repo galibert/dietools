@@ -73,7 +73,7 @@ void test_pixel_green(const char *layer, int pix, int p2, const unsigned char *s
 
 void test_pixel_yellow(const char *layer, int pix, int p2, const unsigned char *src)
 {
-  if(src[0] || !src[2] || src[2] != src[3])
+  if(src[2] || !src[3] || src[0] != src[1])
     bad_pixel(layer, pix, p2, src);
 }
 
