@@ -29,6 +29,8 @@ reader::reader(const char *fname)
   int size = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
 
+  assert(size != 0); // If file was empty, don't bother.
+
   data = (char *)malloc(size+1);
   #ifdef _WIN32
     // Full read of file will get number of characters. If not buffering
