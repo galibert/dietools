@@ -1,6 +1,7 @@
 #ifndef IMAGES_H
 #define IMAGES_H
 
+#include <stdint.h>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
@@ -10,7 +11,7 @@ struct ppm {
   int sy;
 
   unsigned char *map_adr;
-  long size;
+  int_least64_t size;
 
   unsigned char *p(int x, int y) const {
     return img+3*(y*sx+x);
@@ -32,7 +33,7 @@ struct pgm {
   int sy;
 
   unsigned char *map_adr;
-  long size;
+  int_least64_t size;
 
   unsigned char &p(int x, int y) {
     return img[y*sx+x];
@@ -49,7 +50,7 @@ struct pbm {
   int sy;
 
   unsigned char *map_adr;
-  long size;
+  int_least64_t size;
 
   bool p(int x, int y) const {
     return !((img[y*sxb + (x >> 3)] >> (7^(x & 7))) & 1);
@@ -67,9 +68,9 @@ struct pbm {
   ~pbm();
 };
 
-void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accept_not_here);
-void create_file_rw(const char *fname, unsigned char *&data, long size);
-void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, long &size, int dsize, const char *header);
+void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here);
+void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size);
+void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, int_least64_t &size, int dsize, const char *header);
 
 template<typename T, typename B> void load(T *&img, const char *fname, const B *base, boost::function1<void, T *> generator)
 {

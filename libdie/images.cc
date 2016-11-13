@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <errno.h>
 #ifdef _WIN32
   #include <windows.h>
@@ -18,7 +19,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accept_not_here)
+void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -56,20 +57,22 @@ void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accep
   #endif
 }
 
-void create_file_rw(const char *fname, unsigned char *&data, long size)
+void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
 {
   char msg[4096];
   #ifdef _WIN32
     /* Try FILE_SHARED_READ if this fails. */
-    HANDLE fd = CreateFile(fname, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS|TRUNCATE_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE fd = CreateFile(fname, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if(fd == INVALID_HANDLE_VALUE) {
       FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
       fprintf(stderr, "CreateFile failed. Windows error code: %s", msg);
       exit(1);
     }
+    /* TODO: 2GB limit currently b/c size is signed 32-bit. */
+    //SetFilePointer(fd, size, NULL, FILE_BEGIN);
     //size = GetFileSize(fd, NULL);
-    HANDLE map = CreateFileMapping(fd, NULL, PAGE_READWRITE, 0, 0, fname);
+    HANDLE map = CreateFileMapping(fd, NULL, PAGE_READWRITE, 0, size, fname);
     if(map == NULL) {
       FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
@@ -97,7 +100,7 @@ void create_file_rw(const char *fname, unsigned char *&data, long size)
   #endif
 }
 
-void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, long &size, int dsize, const char *header)
+void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, int_least64_t &size, int dsize, const char *header)
 {
   int hsize = strlen(header);
   size = hsize + dsize;
