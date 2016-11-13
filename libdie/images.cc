@@ -21,16 +21,17 @@
 void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accept_not_here)
 {
   char msg[4096];
-  sprintf(msg, "Error opening %s for reading", fname);
   #ifdef _WIN32
     HANDLE fd = CreateFile(fname, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(fd == NULL) {
+    if(fd == INVALID_HANDLE_VALUE) {
       if(GetLastError() == ERROR_FILE_NOT_FOUND && accept_not_here) {
         data = 0;
         size = 0;
         return;
       }
-      perror(msg);
+      FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
+      fprintf(stderr, "CreateFile failed. Windows error code: %s", msg);
       exit(1);
     }
     size = GetFileSize(fd, NULL);
@@ -38,6 +39,7 @@ void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accep
     data = (unsigned char *) MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(fd);
   #else
+    sprintf(msg, "Error opening %s for reading", fname);
     int fd = open(fname, O_RDONLY);
     if(fd < 0) {
       if(errno == ENOENT && accept_not_here) {
@@ -57,19 +59,33 @@ void map_file_ro(const char *fname, unsigned char *&data, long &size, bool accep
 void create_file_rw(const char *fname, unsigned char *&data, long size)
 {
   char msg[4096];
-  sprintf(msg, "Error opening %s for writing", fname);
   #ifdef _WIN32
     /* Try FILE_SHARED_READ if this fails. */
     HANDLE fd = CreateFile(fname, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS|TRUNCATE_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(fd == NULL) {
-      perror(msg);
+    if(fd == INVALID_HANDLE_VALUE) {
+      FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
+      fprintf(stderr, "CreateFile failed. Windows error code: %s", msg);
       exit(1);
     }
-    size = GetFileSize(fd, NULL);
+    //size = GetFileSize(fd, NULL);
     HANDLE map = CreateFileMapping(fd, NULL, PAGE_READWRITE, 0, 0, fname);
+    if(map == NULL) {
+      FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
+      fprintf(stderr, "CreateFileMapping failed. Windows error code: %s", msg);
+      exit(1);
+    }
     data = (unsigned char *) MapViewOfFile(map, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    if(data == NULL) {
+      FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
+      fprintf(stderr, "MapViewOfFile failed. Windows error code: %s", msg);
+      exit(1);
+    }
     CloseHandle(fd);
   #else
+    sprintf(msg, "Error opening %s for writing", fname);
     int fd = open(fname, O_RDWR|O_CREAT|O_TRUNC, 0666);
     if(fd < 0) {
       perror(msg);
