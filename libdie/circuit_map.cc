@@ -18,7 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here)
+static void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -56,7 +56,7 @@ void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, b
   #endif
 }
 
-void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
+static void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
 {
   char msg[4096];
   #ifdef _WIN32
