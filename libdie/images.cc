@@ -69,10 +69,10 @@ void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
       fprintf(stderr, "CreateFile failed. Windows error code: %s", msg);
       exit(1);
     }
-    /* TODO: 2GB limit currently b/c size is signed 32-bit. */
-    //SetFilePointer(fd, size, NULL, FILE_BEGIN);
-    //size = GetFileSize(fd, NULL);
-    HANDLE map = CreateFileMapping(fd, NULL, PAGE_READWRITE, 0, size, fname);
+
+    LARGE_INTEGER full_size;
+    full_size.QuadPart = size;
+    HANDLE map = CreateFileMapping(fd, NULL, PAGE_READWRITE, full_size.HighPart, full_size.LowPart, fname);
     if(map == NULL) {
       FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), msg, 4096, NULL);
