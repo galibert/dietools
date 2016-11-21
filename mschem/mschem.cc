@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -755,7 +756,7 @@ public:
   point get_center() const;
   point get_closest(const node *nref, point p) const;
   void add_link_keys(int nid, vector<unsigned long> &link_keys) const;
-  void handle_key(unsigned long k);
+  void handle_key(uint_least64_t k);
   void to_svg(FILE *fd) const;
   void to_txt(FILE *fd) const;
   void draw(patch &p, int ox, int oy) const;
@@ -2033,11 +2034,11 @@ void net::add_link_keys(int nid, vector<unsigned long> &link_keys) const
 	    }
 	  }
     in_tree[best_a] = true;
-    link_keys.push_back((((unsigned long)best_dist) << 48) | (((unsigned long)best_a) << 32) | (best_b << 16) | (nid));
+    link_keys.push_back((((uint_least64_t)best_dist) << 48) | (((uint_least64_t)best_a) << 32) | (best_b << 16) | (nid));
   }
 }
 
-void net::handle_key(unsigned long k)
+void net::handle_key(uint_least64_t k)
 {
   draw_order.push_back(pair<int, int>((k >> 32) & 0xffff, (k >> 16) & 0xffff));
 }
@@ -2265,9 +2266,9 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
     const tinfo &ti = state->info.trans[i];
     unsigned long id;
     if(ti.t1 < ti.t2)
-      id = (((unsigned long)(ti.t1)) << 48) | (((unsigned long)(ti.t2)) << 32);
+      id = (((uint_least64_t)(ti.t1)) << 48) | (((uint_least64_t)(ti.t2)) << 32);
     else
-      id = (((unsigned long)(ti.t2)) << 48) | (((unsigned long)(ti.t1)) << 32);
+      id = (((uint_least64_t)(ti.t2)) << 48) | (((uint_least64_t)(ti.t1)) << 32);
     id |= (ti.gate << 20) | i;
     transinf.push_back(id);
   }
@@ -2298,9 +2299,9 @@ void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
     if(ci.type == 'c') {
       unsigned long id;
       if(ci.net < ci.netp)
-	id = (((unsigned long)(ci.net )) << 48) | (((unsigned long)(ci.netp)) << 32);
+	id = (((uint_least64_t)(ci.net )) << 48) | (((uint_least64_t)(ci.netp)) << 32);
       else
-	id = (((unsigned long)(ci.netp)) << 48) | (((unsigned long)(ci.net )) << 32);
+	id = (((uint_least64_t)(ci.netp)) << 48) | (((uint_least64_t)(ci.net )) << 32);
       id |= i;
       capsinf.push_back(id);
     }
