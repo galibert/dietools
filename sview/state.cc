@@ -65,10 +65,17 @@ static void bitmap_blend_8_32(unsigned int *ids, int dest_w, int dest_h, const u
 void freetype_init()
 {
   FT_Init_FreeType(&flib);
-  if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
-    fprintf(stderr, "Font opening error\n");
-    exit(1);
-  }
+  #ifdef _WIN32
+    if(FT_New_Face(flib, "C:\\Windows\\Fonts\\times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error- Is times.ttf in C:\\Windows\\Fonts?\n");
+      exit(1);
+    }
+  #else
+    if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error\n");
+      exit(1);
+    }
+  #endif
   FT_Select_Charmap(face, FT_ENCODING_UNICODE);
   cached_size = cached_rot = 0;
 }

@@ -60,10 +60,17 @@ static map<int, cglyph> cached_glyphs;
 void freetype_init()
 {
   FT_Init_FreeType(&flib);
-  if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
-    fprintf(stderr, "Font opening error\n");
-    exit(1);
-  }
+  #ifdef _WIN32
+    if(FT_New_Face(flib, "C:\\Windows\\Fonts\\times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error- Is times.ttf in C:\\Windows\\Fonts?\n");
+      exit(1);
+    }
+  #else
+    if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error\n");
+      exit(1);
+    }
+  #endif
   FT_Select_Charmap(face, FT_ENCODING_UNICODE);
   cached_size = cached_rot = 0;
 }
