@@ -18,7 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here)
+static void map_file_ro(const char *fname, unsigned char *&data, int64_t &size, bool accept_not_here)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -56,7 +56,7 @@ static void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &
   #endif
 }
 
-static void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
+static void create_file_rw(const char *fname, unsigned char *&data, int64_t size)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -110,7 +110,7 @@ circuit_map::circuit_map(const char *fname, int _nl, int _sx, int _sy, bool crea
     memset(map_adr, 0xff, long(nl)*sx*sy*4);
 
   } else {
-    int_least64_t size;
+    int64_t size;
     map_file_ro(fname, map_adr, size, false);
   }
 

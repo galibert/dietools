@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, bool accept_not_here)
+void map_file_ro(const char *fname, unsigned char *&data, int64_t &size, bool accept_not_here)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -57,7 +57,7 @@ void map_file_ro(const char *fname, unsigned char *&data, int_least64_t &size, b
   #endif
 }
 
-void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
+void create_file_rw(const char *fname, unsigned char *&data, int64_t size)
 {
   char msg[4096];
   #ifdef _WIN32
@@ -100,7 +100,7 @@ void create_file_rw(const char *fname, unsigned char *&data, int_least64_t size)
   #endif
 }
 
-void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, int_least64_t &size, int dsize, const char *header)
+void create_file_rw_header(const char *fname, unsigned char *&map_adr, unsigned char *&data, int64_t &size, int dsize, const char *header)
 {
   int hsize = strlen(header);
   size = hsize + dsize;

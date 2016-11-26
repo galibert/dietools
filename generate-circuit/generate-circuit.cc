@@ -48,11 +48,11 @@ circuit_map::circuit_map(const char *fname, int _nl, int _sx, int _sy, bool crea
   sy = _sy;
   unsigned char *map_adr;
   if(create) {
-    create_file_rw(fname, map_adr, nl*4*(int_least64_t)sx*sy);
-    memset(map_adr, 0xff, (int_least64_t)sx*sy*4*nl);
+    create_file_rw(fname, map_adr, nl*4*(int64_t)sx*sy);
+    memset(map_adr, 0xff, (int64_t)sx*sy*4*nl);
 
   } else {
-    int_least64_t size;
+    int64_t size;
     map_file_ro(fname, map_adr, size, false);
   }
 
