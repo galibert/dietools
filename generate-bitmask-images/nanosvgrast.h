@@ -74,7 +74,7 @@ void nsvgDeleteRasterizer(NSVGrasterizer*);
 #include <math.h>
 
 #define NSVG__SUBSAMPLES	5
-#define NSVG__FIXSHIFT		10
+#define NSVG__FIXSHIFT		20
 #define NSVG__FIX			(1 << NSVG__FIXSHIFT)
 #define NSVG__FIXMASK		(NSVG__FIX-1)
 #define NSVG__MEMPAGE_SIZE	1024
@@ -94,7 +94,7 @@ typedef struct NSVGpoint {
 } NSVGpoint;
 
 typedef struct NSVGactiveEdge {
-	int x,dx;
+	int64_t x,dx;
 	float ey;
 	int dir;
 	struct NSVGactiveEdge *next;
@@ -750,10 +750,10 @@ static NSVGactiveEdge* nsvg__addActive(NSVGrasterizer* r, NSVGedge* e, float sta
 //	STBTT_assert(e->y0 <= start_point);
 	// round dx down to avoid going too far
 	if (dxdy < 0)
-		z->dx = (int)(-floorf(NSVG__FIX * -dxdy));
+		z->dx = (int64_t)(-floorf(NSVG__FIX * -dxdy));
 	else
-		z->dx = (int)floorf(NSVG__FIX * dxdy);
-	z->x = (int)floorf(NSVG__FIX * (e->x0 + dxdy * (startPoint - e->y0)));
+		z->dx = (int64_t)floorf(NSVG__FIX * dxdy);
+	z->x = (int64_t)floorf(NSVG__FIX * (e->x0 + dxdy * (startPoint - e->y0)));
 //	z->x -= off_x * FIX;
 	z->ey = e->y1;
 	z->next = 0;
@@ -768,7 +768,7 @@ static void nsvg__freeActive(NSVGrasterizer* r, NSVGactiveEdge* z)
 	r->freelist = z;
 }
 
-static void nsvg__fillScanline(unsigned char* scanline, int len, int x0, int x1, int maxWeight, int* xmin, int* xmax)
+static void nsvg__fillScanline(unsigned char* scanline, int len, int64_t x0, int64_t x1, int maxWeight, int* xmin, int* xmax)
 {
 	int i = x0 >> NSVG__FIXSHIFT;
 	int j = x1 >> NSVG__FIXSHIFT;
@@ -801,7 +801,8 @@ static void nsvg__fillScanline(unsigned char* scanline, int len, int x0, int x1,
 static void nsvg__fillActiveEdges(unsigned char* scanline, int len, NSVGactiveEdge* e, int maxWeight, int* xmin, int* xmax, char fillRule)
 {
 	// non-zero winding fill
-	int x0 = 0, w = 0;
+	int64_t x0 = 0;
+	int w = 0;
 
 	if (fillRule == NSVG_FILLRULE_NONZERO) {
 		// Non-zero
@@ -810,7 +811,7 @@ static void nsvg__fillActiveEdges(unsigned char* scanline, int len, NSVGactiveEd
 				// if we're currently at zero, we need to record the edge start point
 				x0 = e->x; w += e->dir;
 			} else {
-				int x1 = e->x; w += e->dir;
+				int64_t x1 = e->x; w += e->dir;
 				// if we went to zero, we need to draw
 				if (w == 0)
 					nsvg__fillScanline(scanline, len, x0, x1, maxWeight, xmin, xmax);
@@ -824,7 +825,7 @@ static void nsvg__fillActiveEdges(unsigned char* scanline, int len, NSVGactiveEd
 				// if we're currently at zero, we need to record the edge start point
 				x0 = e->x; w = 1;
 			} else {
-				int x1 = e->x; w = 0;
+				int64_t x1 = e->x; w = 0;
 				nsvg__fillScanline(scanline, len, x0, x1, maxWeight, xmin, xmax);
 			}
 			e = e->next;
