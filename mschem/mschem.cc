@@ -399,18 +399,18 @@ void patch::line(int ox, int oy, int x1, int y1, int x2, int y2)
   }
 
   if(x2 > x1) {
-    unsigned long dx = (((unsigned long)(x2-x1)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x2-x1)) << 24) / (y2 - y1);
     unsigned char *p;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx*((oy-y1)*2-1)/2;
       px = (cpx - 0x7fffff) >> 24;
       p = data+1;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx/2;
       px = x1;
       p = data+1 + (PATCH_SX+1)*(y1-oy);
@@ -458,18 +458,18 @@ void patch::line(int ox, int oy, int x1, int y1, int x2, int y2)
     memset(p + xx1, 0, xx2-xx1+1);
 
   } else {
-    unsigned long dx = (((unsigned long)(x1-x2)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x1-x2)) << 24) / (y2 - y1);
     unsigned char *p;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx*((oy-y1)*2-1)/2;
       px = (cpx + 0x800000) >> 24;
       p = data+1;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx/2;
       px = x1;
       p = data+1 + (PATCH_SX+1)*(y1-oy);
@@ -762,7 +762,7 @@ public:
 
   point get_center() const;
   point get_closest(const node *nref, point p) const;
-  void add_link_keys(int nid, vector<unsigned long> &link_keys) const;
+  void add_link_keys(int nid, vector<uint64_t> &link_keys) const;
   void handle_key(uint64_t k);
   void to_svg(FILE *fd) const;
   void to_txt(FILE *fd) const;
@@ -2011,7 +2011,7 @@ point net::get_closest(const node *nref, point ref) const
   return best_point;
 }
 
-void net::add_link_keys(int nid, vector<unsigned long> &link_keys) const
+void net::add_link_keys(int nid, vector<uint64_t> &link_keys) const
 {
   int np = nodes.size() + routes.size();
   vector<point> pt;
@@ -2268,10 +2268,10 @@ void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, co
 
 void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  vector<unsigned long> transinf;
+  vector<uint64_t> transinf;
   for(unsigned int i=0; i != state->info.trans.size(); i++) {
     const tinfo &ti = state->info.trans[i];
-    unsigned long id;
+    uint64_t id;
     if(ti.t1 < ti.t2)
       id = (((uint64_t)(ti.t1)) << 48) | (((uint64_t)(ti.t2)) << 32);
     else
@@ -2300,11 +2300,11 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 
 void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  vector<unsigned long> capsinf;
+  vector<uint64_t> capsinf;
   for(unsigned int i=0; i != state->info.circs.size(); i++) {
     const cinfo &ci = state->info.circs[i];
     if(ci.type == 'c') {
-      unsigned long id;
+      uint64_t id;
       if(ci.net < ci.netp)
 	id = (((uint64_t)(ci.net )) << 48) | (((uint64_t)(ci.netp)) << 32);
       else
@@ -2378,12 +2378,12 @@ void build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &nets)
 
 void build_net_links(vector<net *> &nets)
 {
-  vector<unsigned long> link_keys;
+  vector<uint64_t> link_keys;
   for(unsigned int i=0; i != nets.size(); i++)
     nets[i]->add_link_keys(i, link_keys);
   sort(link_keys.begin(), link_keys.end());
   for(unsigned int i=0; i != link_keys.size(); i++) {
-    unsigned long k = link_keys[i];
+    uint64_t k = link_keys[i];
     nets[k & 0xffff]->handle_key(k);
   }
 }

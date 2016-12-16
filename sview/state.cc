@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -142,7 +143,7 @@ static void freetype_render(const char *str, double size, double rot, int &width
     cx += cg.dx;
     cy += cg.dy;
   }
-    
+
   width = xmax - xmin;
   height = ymax - ymin;
   image = new unsigned char[width*height];
@@ -369,18 +370,18 @@ static void line(unsigned int *ids, int ox, int oy, int w, int h, int z, int x1,
   }
 
   if(x2 > x1) {
-    unsigned long dx = (((unsigned long)(x2-x1)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x2-x1)) << 24) / (y2 - y1);
     unsigned int *ip;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx*((oy-y1)*2-1)/2;
       px = (cpx - 0x7fffff) >> 24;
       ip = ids;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx/2;
       px = x1;
       ip = ids + w*(y1-oy);
@@ -430,18 +431,18 @@ static void line(unsigned int *ids, int ox, int oy, int w, int h, int z, int x1,
       ip[x] = id;
 
   } else {
-    unsigned long dx = (((unsigned long)(x1-x2)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x1-x2)) << 24) / (y2 - y1);
     unsigned int *ip;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx*((oy-y1)*2-1)/2;
       px = (cpx + 0x800000) >> 24;
       ip = ids;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx/2;
       px = x1;
       ip = ids + w*(y1-oy);
@@ -917,7 +918,7 @@ void state_t::build()
     power[i] = 0;
     delay[i] = 10;
   }
-  
+
   // Mark vcc/gnd nets
   for(int i=0; i != nt; i++)
     if(nodes[i]->type == node::V || nodes[i]->type == node::G) {
@@ -1231,7 +1232,7 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
   printf("  nets:");
   for(unsigned int i=0; i != nids_to_solve.size(); i++)
     printf(" %s", nets[nids_to_solve[i]]->name.c_str());
-  printf("\n");  
+  printf("\n");
 
   for(int vr=0; vr<2; vr++) {
     set<node *>::const_iterator aci = accepted_trans.begin();
