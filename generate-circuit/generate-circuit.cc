@@ -8,7 +8,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/mman.h>
+#ifdef _WIN32
+  #include <windows.h>
+#else
+  #include <sys/mman.h>
+#endif
 #include <math.h>
 
 #include <set>
@@ -44,11 +48,11 @@ circuit_map::circuit_map(const char *fname, int _nl, int _sx, int _sy, bool crea
   sy = _sy;
   unsigned char *map_adr;
   if(create) {
-    create_file_rw(fname, map_adr, nl*4*(long)sx*sy);
-    memset(map_adr, 0xff, (long)sx*sy*4*nl);
+    create_file_rw(fname, map_adr, nl*4*(int64_t)sx*sy);
+    memset(map_adr, 0xff, (int64_t)sx*sy*4*nl);
 
   } else {
-    long size;
+    int64_t size;
     map_file_ro(fname, map_adr, size, false);
   }
 
@@ -57,7 +61,11 @@ circuit_map::circuit_map(const char *fname, int _nl, int _sx, int _sy, bool crea
 
 circuit_map::~circuit_map()
 {
-  munmap(data, sx*sy*4*nl);
+  #ifdef _WIN32
+    UnmapViewOfFile(data);
+  #else
+    munmap(data, long(nl)*sx*sy*4);
+  #endif
 }
 
 enum {
@@ -88,7 +96,7 @@ struct via_info {
     metal = _metal;
     active_poly = _active_poly;
   }
-};  
+};
 
 struct net_info {
   set<int> circuits;
@@ -377,7 +385,7 @@ void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_m
 	  }
 	  has_error = true;
 	} else {
-	  int pmap = -1, amap = -1; 
+	  int pmap = -1, amap = -1;
 	  for(set<int>::const_iterator j = ci.neighbors.begin(); j != ci.neighbors.end(); j++) {
 	    int t = circuits[*j].type;
 	    switch(t) {
@@ -433,8 +441,8 @@ void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_m
 	ci.neighbors.erase(j);
 	ci.neighbors.insert(rm);
 	goto retry;
-      }    
-  }  
+      }
+  }
 }
 
 void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, list<metal_link_info> &virtual_poly_id, circuit_map &cmap)
@@ -491,13 +499,13 @@ void map_vias_set(int x, int y, via_info *via, const vector<circuit_info> *circu
   else if(na != -1 || np != -1) {
     int nn = na == -1 ? np : na;
     if((*circuit_infos)[nn].type == TRANSISTOR)
-      fprintf(stderr, "via at (%d, %d) touches a transistor\n", x, cmap->sy-1-y);    
+      fprintf(stderr, "via at (%d, %d) touches a transistor\n", x, cmap->sy-1-y);
     else if((*circuit_infos)[nn].type == CAPACITOR)
-      fprintf(stderr, "via at (%d, %d) touches a capacitor\n", x, cmap->sy-1-y);    
+      fprintf(stderr, "via at (%d, %d) touches a capacitor\n", x, cmap->sy-1-y);
     else if(via->active_poly == -1)
       via->active_poly = nn;
     else if(via->active_poly != nn)
-      fprintf(stderr, "via at (%d, %d) touches multiple poly/layer zones\n", x, cmap->sy-1-y);    
+      fprintf(stderr, "via at (%d, %d) touches multiple poly/layer zones\n", x, cmap->sy-1-y);
   }
 }
 

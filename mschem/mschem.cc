@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -59,10 +60,17 @@ static map<int, cglyph> cached_glyphs;
 void freetype_init()
 {
   FT_Init_FreeType(&flib);
-  if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
-    fprintf(stderr, "Font opening error\n");
-    exit(1);
-  }
+  #ifdef _WIN32
+    if(FT_New_Face(flib, "C:\\Windows\\Fonts\\times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error- Is times.ttf in C:\\Windows\\Fonts?\n");
+      exit(1);
+    }
+  #else
+    if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
+      fprintf(stderr, "Font opening error\n");
+      exit(1);
+    }
+  #endif
   FT_Select_Charmap(face, FT_ENCODING_UNICODE);
   cached_size = cached_rot = 0;
 }
@@ -129,7 +137,7 @@ static void freetype_render(const char *str, double size, double rot, int &width
     cx += cg.dx;
     cy += cg.dy;
   }
-    
+
   width = xmax - xmin;
   height = ymax - ymin;
   image = new unsigned char[width*height];
@@ -391,18 +399,18 @@ void patch::line(int ox, int oy, int x1, int y1, int x2, int y2)
   }
 
   if(x2 > x1) {
-    unsigned long dx = (((unsigned long)(x2-x1)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x2-x1)) << 24) / (y2 - y1);
     unsigned char *p;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx*((oy-y1)*2-1)/2;
       px = (cpx - 0x7fffff) >> 24;
       p = data+1;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx/2;
       px = x1;
       p = data+1 + (PATCH_SX+1)*(y1-oy);
@@ -450,18 +458,18 @@ void patch::line(int ox, int oy, int x1, int y1, int x2, int y2)
     memset(p + xx1, 0, xx2-xx1+1);
 
   } else {
-    unsigned long dx = (((unsigned long)(x1-x2)) << 24) / (y2 - y1);
+    uint64_t dx = (((uint64_t)(x1-x2)) << 24) / (y2 - y1);
     unsigned char *p;
-    unsigned long cpx;
+    uint64_t cpx;
     unsigned int px;
     if(y1 < oy) {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx -= dx*((oy-y1)*2-1)/2;
       px = (cpx + 0x800000) >> 24;
       p = data+1;
       y1 = 0;
     } else {
-      cpx = (((unsigned long)x1) << 24) + 0x800000;
+      cpx = (((uint64_t)x1) << 24) + 0x800000;
       cpx += dx/2;
       px = x1;
       p = data+1 + (PATCH_SX+1)*(y1-oy);
@@ -704,7 +712,7 @@ public:
   static int l_type(lua_State *L);
   static int l_tostring(lua_State *L);
 };
-  
+
 class pad : public node {
 public:
   static const char *type_name_s;
@@ -754,8 +762,8 @@ public:
 
   point get_center() const;
   point get_closest(const node *nref, point p) const;
-  void add_link_keys(int nid, vector<unsigned long> &link_keys) const;
-  void handle_key(unsigned long k);
+  void add_link_keys(int nid, vector<uint64_t> &link_keys) const;
+  void handle_key(uint64_t k);
   void to_svg(FILE *fd) const;
   void to_txt(FILE *fd) const;
   void draw(patch &p, int ox, int oy) const;
@@ -870,7 +878,7 @@ void svg_text(FILE *fd, point p, string text, int px, int size)
   static const char *anchor[3] = { "start", "middle", "end" };
   fprintf(fd, "  <text xml:space=\"preserve\" style=\"font-size:%dpx;text-anchor:%s;fill:#000000;stroke:none\" x=\"%d\" y=\"%d\">\n", size*10, anchor[px+1], p.x*10, p.y*10);
   fprintf(fd, "    <tspan x=\"%d\" y=\"%d\">%s</tspan>\n", p.x*10, p.y*10, text.c_str());
-  fprintf(fd, "  </text>\n");	  
+  fprintf(fd, "  </text>\n");
 }
 
 void svg_close(FILE *fd)
@@ -1170,7 +1178,7 @@ void pad::set_orientation(char orient, net *source)
   else if(orient == 'w')
     orientation = W_S;
   else
-    abort();  
+    abort();
 }
 
 int pad::luaopen(lua_State *L)
@@ -1711,7 +1719,7 @@ void capacitor::set_orientation(char orient, net *source)
   else if(orient == 'w')
     orientation = W_S;
   else
-    abort();  
+    abort();
   if(source == nets[T2])
     orientation |= 4;
   else {
@@ -2003,7 +2011,7 @@ point net::get_closest(const node *nref, point ref) const
   return best_point;
 }
 
-void net::add_link_keys(int nid, vector<unsigned long> &link_keys) const
+void net::add_link_keys(int nid, vector<uint64_t> &link_keys) const
 {
   int np = nodes.size() + routes.size();
   vector<point> pt;
@@ -2033,11 +2041,11 @@ void net::add_link_keys(int nid, vector<unsigned long> &link_keys) const
 	    }
 	  }
     in_tree[best_a] = true;
-    link_keys.push_back((((unsigned long)best_dist) << 48) | (((unsigned long)best_a) << 32) | (best_b << 16) | (nid));
+    link_keys.push_back((((uint64_t)best_dist) << 48) | (((uint64_t)best_a) << 32) | (best_b << 16) | (nid));
   }
 }
 
-void net::handle_key(unsigned long k)
+void net::handle_key(uint64_t k)
 {
   draw_order.push_back(pair<int, int>((k >> 32) & 0xffff, (k >> 16) & 0xffff));
 }
@@ -2147,7 +2155,7 @@ void net::draw(patch &p, int ox, int oy) const
     pt[i+nodes.size()] = routes[i];
 
   for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
-    if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)      
+    if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
     p.line(ox, oy, pt[i->first].x*10, pt[i->first].y*10, pt[i->second].x*10, pt[i->second].y*10);
     use_count[pt[i->first].y*65536 + pt[i->first].x]++;
@@ -2230,7 +2238,7 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
 	break;
       x1 = x1 >> 1;
       y1 = y1 >> 1;
-    }      
+    }
     tick(tinfo, id++, (limx+1)*(limy+1));
   }
   delete[] levels;
@@ -2260,14 +2268,14 @@ void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, co
 
 void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  vector<unsigned long> transinf;
+  vector<uint64_t> transinf;
   for(unsigned int i=0; i != state->info.trans.size(); i++) {
     const tinfo &ti = state->info.trans[i];
-    unsigned long id;
+    uint64_t id;
     if(ti.t1 < ti.t2)
-      id = (((unsigned long)(ti.t1)) << 48) | (((unsigned long)(ti.t2)) << 32);
+      id = (((uint64_t)(ti.t1)) << 48) | (((uint64_t)(ti.t2)) << 32);
     else
-      id = (((unsigned long)(ti.t2)) << 48) | (((unsigned long)(ti.t1)) << 32);
+      id = (((uint64_t)(ti.t2)) << 48) | (((uint64_t)(ti.t1)) << 32);
     id |= (ti.gate << 20) | i;
     transinf.push_back(id);
   }
@@ -2292,15 +2300,15 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 
 void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
 {
-  vector<unsigned long> capsinf;
+  vector<uint64_t> capsinf;
   for(unsigned int i=0; i != state->info.circs.size(); i++) {
     const cinfo &ci = state->info.circs[i];
     if(ci.type == 'c') {
-      unsigned long id;
+      uint64_t id;
       if(ci.net < ci.netp)
-	id = (((unsigned long)(ci.net )) << 48) | (((unsigned long)(ci.netp)) << 32);
+	id = (((uint64_t)(ci.net )) << 48) | (((uint64_t)(ci.netp)) << 32);
       else
-	id = (((unsigned long)(ci.netp)) << 48) | (((unsigned long)(ci.net )) << 32);
+	id = (((uint64_t)(ci.netp)) << 48) | (((uint64_t)(ci.net )) << 32);
       id |= i;
       capsinf.push_back(id);
     }
@@ -2314,7 +2322,7 @@ void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
     f += state->info.circs[cid].surface;
     if(i != capsinf.size()-1 && !((capsinf[i] ^ capsinf[i+1]) & 0xffffffffffff0000UL))
       continue;
-    
+
     capacitor *caps = new capacitor(cid, f);
     nodes.push_back(caps);
     nodemap[state->info.circs[cid].net].push_back(ref(caps, T1));
@@ -2350,7 +2358,7 @@ void build_nets(vector<net *> &nets, const map<int, list<ref> > &nodemap)
   for(unsigned int i=0; i != state->info.nets.size(); i++) {
     net *n = new net(i, nets.size(), false);
     nets.push_back(n);
-    if(int(i) == state->vcc || int(i) == state->gnd)      
+    if(int(i) == state->vcc || int(i) == state->gnd)
       continue;
     map<int, list<ref> >::const_iterator k = nodemap.find(i);
     if(k != nodemap.end())
@@ -2370,12 +2378,12 @@ void build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &nets)
 
 void build_net_links(vector<net *> &nets)
 {
-  vector<unsigned long> link_keys;
+  vector<uint64_t> link_keys;
   for(unsigned int i=0; i != nets.size(); i++)
     nets[i]->add_link_keys(i, link_keys);
   sort(link_keys.begin(), link_keys.end());
   for(unsigned int i=0; i != link_keys.size(); i++) {
-    unsigned long k = link_keys[i];
+    uint64_t k = link_keys[i];
     nets[k & 0xffff]->handle_key(k);
   }
 }
@@ -2474,14 +2482,14 @@ int l_nodes_trace(lua_State *L)
       }
     }
   }
- 
+
   lua_newtable(L);
   int id = 1;
   for(set<node *>::const_iterator i = fnodes.begin(); i != fnodes.end(); i++) {
     (*i)->wrap(L);
     lua_rawseti(L, -2, id++);
   }
-  return 1; 
+  return 1;
 }
 
 int l_make_match(lua_State *L)
@@ -2830,7 +2838,7 @@ int l_match(lua_State *L)
 	  best_free = i;
 	}
 	i++;
-      }	
+      }
     }
     if(best_free_count == 0) {
       assert(match_unordered.empty());
@@ -2953,7 +2961,7 @@ int l_match(lua_State *L)
       if(0) {
 	fprintf(stderr, "  check param %d (%s) vs. %p (%d)\n", i, me.params[i].c_str(), params[i], params[i]->id);
       }
-      map<string, net *>::const_iterator ni = cur_nets.find(me.params[i]);	
+      map<string, net *>::const_iterator ni = cur_nets.find(me.params[i]);
       if(ni == cur_nets.end()) {
 	ni = preset_nets.find(me.params[i]);
 	if(ni == preset_nets.end()) {
@@ -2996,7 +3004,7 @@ int l_match(lua_State *L)
     int nalt = me.type == "t" || me.type == "d" || me.type == "i" || me.type == "c" ? 2 : 1;
     alts[slot]++;
     if(alts[slot] == nalt) {
-      node *n = *cursors[slot];   
+      node *n = *cursors[slot];
       assert(used_nodes.find(n) != used_nodes.end());
       used_nodes.erase(used_nodes.find(n));
       if(0)
@@ -3011,7 +3019,7 @@ int l_match(lua_State *L)
   {
     if(0)
       fprintf(stderr, "next non alt in slot %d\n", slot);
-    
+
     map<string, node *>::const_iterator pi = preset_nodes.find(*cur_match);
     if(pi != preset_nodes.end())
       goto backoff_slot;

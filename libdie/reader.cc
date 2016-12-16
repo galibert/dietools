@@ -24,12 +24,24 @@ reader::reader(const char *fname)
     exit(2);
   }
 
+  // On Windows, lseek is upper bound for text files, thanks to
+  // CLRF translation.
   int size = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
 
+  assert(size != 0); // If file was empty, don't bother.
+
   data = (char *)malloc(size+1);
-  read(fd, data, size);
-  data[size] = 0;
+  #ifdef _WIN32
+    // Full read of file will get number of characters. If not buffering
+    // full file, getc in for loop might be better.
+    int char_size = read(fd, data, size);
+    assert(char_size <= size);
+    data[char_size] = 0;
+  #else
+    read(fd, data, size);
+    data[size] = 0;
+  #endif
   close(fd);
 
   pos = data;

@@ -208,7 +208,13 @@ int main(int argc, char **argv)
 
     sprintf(buf, "%s.pbm", image_name);
 
-    fd = open(buf, O_RDWR|O_CREAT|O_TRUNC, 0666);
+    // O_BINARY for Windows- write out a "binary" PBM file with untranslated
+    // newlines.
+    #ifdef _WIN32
+      fd = open(buf, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0666);
+    #else
+      fd = open(buf, O_RDWR|O_CREAT|O_TRUNC, 0666);
+    #endif
     if(fd<0) {
       perror(buf);
       exit(2);
