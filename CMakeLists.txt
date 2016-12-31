@@ -25,5 +25,3 @@ add_subdirectory(logx)
 add_subdirectory(mschem)
 add_subdirectory(mview)
 add_subdirectory(sview)
-
-install(TARGETS generate-bitmask-images generate-circuit libdie logx mschem mview sview)
