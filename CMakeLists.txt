@@ -3,6 +3,8 @@ project(dietools)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-strict-overflow -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-overflow -Wno-unused-parameter")
 
 find_package(Freetype REQUIRED)
 include_directories(${FREETYPE_INCLUDE_DIRS})
@@ -23,3 +25,5 @@ add_subdirectory(logx)
 add_subdirectory(mschem)
 add_subdirectory(mview)
 add_subdirectory(sview)
+
+install(TARGETS generate-bitmask-images generate-circuit libdie logx mschem mview sview)
