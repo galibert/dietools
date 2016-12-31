@@ -1,7 +1,7 @@
 #ifndef MVMAIN_H
 #define MVMAIN_H
 
-#include "SVMainUI.h"
+#include "ui_SVMainUI.h"
 #include "NetStateList.h"
 
 class SVMain : public QMainWindow, private Ui::SVMainUI {
