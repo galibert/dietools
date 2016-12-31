@@ -1,7 +1,7 @@
 #ifndef NETSTATE_H
 #define NETSTATE_H
 
-#include "NetStateUI.h"
+#include "ui_NetStateUI.h"
 
 class NetState : public QWidget, private Ui::NetStateUI {
   Q_OBJECT

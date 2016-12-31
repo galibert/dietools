@@ -1,7 +1,7 @@
 #ifndef NETSTATELIST_H
 #define NETSTATELIST_H
 
-#include "NetStateListUI.h"
+#include "ui_NetStateListUI.h"
 #include "NetState.h"
 
 #include <map>
