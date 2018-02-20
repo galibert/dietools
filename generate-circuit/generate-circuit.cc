@@ -553,7 +553,7 @@ void via_list_add(list<int> &stack, const map<int, list<int> > vmap, int id, con
 void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_info> &circuit_infos, const via_map &via_maps, bool has_poly, int sx, int sy)
 {
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
-    tinfo.tick(i, circuit_infos.size());
+    //    tinfo.tick(i, circuit_infos.size());
     if(circuit_infos[i].type != DISABLED && circuit_infos[i].net == -1) {
       if(circuit_infos[i].type == CAPACITOR || (circuit_infos[i].type == TRANSISTOR && !has_poly))
 	continue;
@@ -567,6 +567,7 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 	int cid = stack.front();
 	int pcid = cid;
 	stack.pop_front();
+	int start_stack_size = stack.size();
 	int is_poly = cid / 1000000;
 	cid = cid % 1000000;
 	circuit_info &ci = circuit_infos[cid];
@@ -633,7 +634,7 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 	  for(set<int>::const_iterator j = ci.neighbors.begin(); j != ci.neighbors.end(); j++) {
 	    if(circuit_infos[*j].type == ACTIVE || circuit_infos[*j].type == CAPACITOR)
 	      stack.push_back(*j);
-	    if(circuit_infos[*j].type == POLY || circuit_infos[*j].type == TRANSISTOR )
+	    if(circuit_infos[*j].type == POLY || circuit_infos[*j].type == TRANSISTOR)
 	      stack.push_back(*j + 1000000);
 	    if(circuit_infos[*j].type == CAPACITOR)
 	      stack.push_back(*j + 1000000);
@@ -661,6 +662,16 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 
 	default:
 	  abort();
+	}
+
+	if(false && !nid) {
+	  list<int>::const_iterator i = stack.begin();
+	  for(int ii=0; ii<start_stack_size; ii++)
+	    i++;
+	  printf("%d:", cid);
+	  for(;i != stack.end();i++)
+	    printf(" %d", *i);
+	  printf("\n");
 	}
 #if 0
 	fprintf(stderr, "  + %c%d %d (%d, %d)-(%d, %d)", type_names[ci.type], cid, is_poly, ci.x0, cmap.sy-1-ci.y1, ci.x1, cmap.sy-1-ci.y0);
@@ -864,7 +875,7 @@ void build_transistors_metal_gate(time_info &tinfo, vector<trans_info> &trans_in
 	fprintf(stderr, "Gate at (%d, %d)-(%d, %d) has %d neighbors.\n",
 		ci.x0, cmap.sy-1-ci.y0, ci.x1, cmap.sy-1-ci.y1,
 		int(ci.neighbors.size()));
-	exit(1);
+	continue;
       }
 
 

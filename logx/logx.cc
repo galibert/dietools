@@ -486,7 +486,6 @@ void build_net_groups(list<set<net *>> &netgroups, const set<net *> &nets)
 	net *n = stack.front();
 	stack.pop_front();
 	done.insert(n);
-	const auto &trans = net_to_trans_term[n];
 	for(const auto t : net_to_trans_term[n]) {
 	  for(int term=0; term<3; term++)
 	    if(term != GATE) {
@@ -563,6 +562,13 @@ string vname(const mapper &m, const vector<int> &vars, int id)
 }
 
 void handler_d1aa_tab0__a(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !%s;\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str());
+}
+
+void handler_t0ba_ta11__a(const mapper &m, const vector<int> &vars)
 {
   printf("  %s = !%s;\n",
 	 vname(m, vars, 0).c_str(),
@@ -852,6 +858,13 @@ template<int n> void handler_tab1_tac0__a(const mapper &m, const vector<int> &va
 	 vname(m, vars, 1).c_str());	 
 }
 
+void handler_t0ba_daa1_tadc_tcfe__ac(const mapper &m, const vector<int> &vars)
+{
+  printf("  %s = !%s\n",
+	 vname(m, vars, 0).c_str(),
+	 vname(m, vars, 1).c_str());
+  printf("  set_01(%s, %s, %s)\n",
+	 
 struct handler {
   mapper m;
   void (*f)(const mapper &m, const vector<int> &vars);
@@ -917,6 +930,7 @@ void register_handlers()
 {
   reg("d1aa tab0 +a", handler_d1aa_tab0__a);
   reg("tab0 tac0 daa1 +a", handler_tab0_tac0_daa1__a);
+  reg("tab0 tac0 ta11 +a", handler_tab0_tac0_daa1__a);
   reg("tab0 tac0 tad0 daa1 +a", handler_tab0_tac0_tad0_daa1__a);
   reg("tab0 tac0 tad0 tae0 daa1 +a", handler_tab0_tac0_tad0_tae0_daa1__a);
   reg("tab0 tac0 tad0 tae0 taf0 daa1 +a", handler_tab0_tac0_tad0_tae0_taf0_daa1__a);
@@ -957,6 +971,8 @@ void register_handlers()
   reg("t0ba daa1 ta1c +ac", handler_t0ba_daa1_ta1c__ac);
   reg("tab0 tac0 daa1 ta1d +ad", handler_tab0_tac0_daa1_ta1d__ad);
   reg("tab0 tac0 daa1 taed +ad", handler_tab0_tac0_daa1_taed__ad);
+  reg("t0ba ta11 +a", handler_t0ba_ta11__a);
+  reg("t0ba daa1 tadc tcfe +ac", handler_t0ba_daa1_tadc_tcfe__ac);
 }
 
 bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)

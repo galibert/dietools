@@ -259,7 +259,7 @@ void SVDisplay::update_status()
   } else {
     node *nn = nodes[id & node::ID_MASK];
     if(nn->type == node::T || nn->type == node::D || nn->type == node::I || nn->type == node::C)
-      p += sprintf(p, " %g", nn->type == node::C ? nn->f/160 : nn->f);
+      p += sprintf(p, " %g", nn->type == node::C ? nn->f/4 : nn->f);
   }
   {
     int tp, ts;
