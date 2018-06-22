@@ -29,6 +29,8 @@ extern "C" {
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <fontconfig/fontconfig.h>
+
 const char *opt_text, *opt_svg, *opt_tiles;
 
 double ratio;
@@ -60,17 +62,25 @@ static std::map<int, cglyph> cached_glyphs;
 void freetype_init()
 {
   FT_Init_FreeType(&flib);
-  #ifdef _WIN32
-    if(FT_New_Face(flib, "C:\\Windows\\Fonts\\times.ttf", 0, &face)) {
-      fprintf(stderr, "Font opening error- Is times.ttf in C:\\Windows\\Fonts?\n");
-      exit(1);
-    }
-  #else
-    if(FT_New_Face(flib, "/usr/share/fonts/corefonts/times.ttf", 0, &face)) {
-      fprintf(stderr, "Font opening error\n");
-      exit(1);
-    }
-  #endif
+
+  // find the font
+  FcConfig *config = FcInitLoadConfigAndFonts();
+  FcPattern *pat = FcNameParse((const FcChar8*)"Times");
+  FcConfigSubstitute(config, pat, FcMatchPattern);
+  FcDefaultSubstitute(pat);
+  FcChar8* fontFile = NULL;
+  FcResult result;
+  FcPattern* font = FcFontMatch(config, pat, &result);
+  if (!font || (FcPatternGetString(font, FC_FILE, 0, &fontFile) != FcResultMatch)) {
+    fprintf(stderr, "Font finding error- Is the Times font installed?\n");
+    exit(1);
+  }
+
+  if(FT_New_Face(flib, (char*)fontFile, 0, &face)) {
+    fprintf(stderr, "Font opening error\n");
+    exit(1);
+  }
+
   FT_Select_Charmap(face, FT_ENCODING_UNICODE);
   cached_size = cached_rot = 0;
 }
