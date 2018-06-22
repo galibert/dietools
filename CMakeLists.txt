@@ -5,8 +5,10 @@ project(dietools)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
+set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-strict-overflow -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-overflow -Wno-unused-parameter")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Checks currently do nothing, but are helpful for me in the future.
 CHECK_INCLUDE_FILES(fcntl.h HAVE_FCNTL_H)
@@ -21,6 +23,8 @@ CHECK_TYPE_SIZE(long SIZEOF_LONG)
 # libgcc and libstdc++ will also be required.
 find_package(Freetype REQUIRED)
 include_directories(${FREETYPE_INCLUDE_DIRS})
+find_package(Fontconfig REQUIRED)
+include_directories(${FONTCONFIG_INCLUDE_DIR})
 find_package(Lua REQUIRED)
 include_directories(${LUA_INCLUDE_DIR})
 find_package(ZLIB REQUIRED)
