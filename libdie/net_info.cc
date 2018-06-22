@@ -54,7 +54,7 @@ net_info::net_info(const char *fname, const circuit_map &cmap, const circuit_inf
     char type = gw()[0];
     int x = gi();
     int y = gi();
-    string name = gw();
+    std::string name = gw();
     nl();
 
     int cm;
@@ -119,7 +119,7 @@ double net_info::gd()
   return strtod(gw(), 0);
 }
 
-string net_info::net_name(int net) const
+std::string net_info::net_name(int net) const
 {
   if(net != -1 && names[net] != "")
     return names[net];
@@ -128,9 +128,9 @@ string net_info::net_name(int net) const
   return buf;
 }
 
-int net_info::find(string name) const
+int net_info::find(std::string name) const
 {
-  map<string, int>::const_iterator i = nets.find(name);
+  auto i = nets.find(name);
   if(i == nets.end()) {
     fprintf(stderr, "Net %s unknown\n", name.c_str());
     exit(1);

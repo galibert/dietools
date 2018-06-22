@@ -6,8 +6,6 @@
 
 #include <map>
 
-using namespace std;
-
 class NetStateList : public QScrollArea, private Ui::NetStateListUI {
   Q_OBJECT
 
@@ -27,7 +25,7 @@ public slots:
   void close();
 
 private:
-  map<int, NetState *> nets;
+  std::map<int, NetState *> nets;
 };
 
 #endif

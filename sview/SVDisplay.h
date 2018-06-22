@@ -5,7 +5,6 @@
 #include <vector>
 #include <string>
 
-using namespace std;
 class circuit_map;
 
 class SVDisplay : public QWidget {

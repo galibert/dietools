@@ -30,7 +30,7 @@ struct cglyph {
 static FT_Library flib;
 static FT_Face face;
 static double cached_size, cached_rot;
-static map<int, cglyph> cached_glyphs;
+static std::map<int, cglyph> cached_glyphs;
 
 static void bitmap_blend_8_32(unsigned int *ids, int dest_w, int dest_h, const unsigned char *src, int src_w, int src_h, int x, int y, int z, unsigned int id)
 {
@@ -84,7 +84,7 @@ void freetype_init()
 static void freetype_render(const char *str, double size, double rot, int &width, int &height, unsigned char *&image)
 {
   if(size != cached_size || rot != cached_rot) {
-    for(map<int, cglyph>::iterator i = cached_glyphs.begin(); i != cached_glyphs.end(); i++)
+    for(std::map<int, cglyph>::iterator i = cached_glyphs.begin(); i != cached_glyphs.end(); i++)
       delete[] i->second.image;
     cached_glyphs.clear();
   }
@@ -493,8 +493,8 @@ static void line(unsigned int *ids, int ox, int oy, int w, int h, int z, int x1,
   }
 }
 
-vector<node *> nodes;
-vector<net *> nets;
+std::vector<node *> nodes;
+std::vector<net *> nets;
 
 SVMain *svmain;
 const char *schem_file;
@@ -823,7 +823,7 @@ void net::draw(unsigned int *ids, int ox, int oy, int w, int h, int z) const
   }
 }
 
-string id_to_name(unsigned int id)
+std::string id_to_name(unsigned int id)
 {
   switch(id & node::TYPE_MASK) {
   case node::NODE_MARK:
@@ -885,7 +885,7 @@ void state_t::reload()
 {
   build();
 
-  set<int> changed;
+  std::set<int> changed;
   for(int i=0; i != int(nets.size()); i++)
     if(power[i])
       changed.insert(i);
@@ -947,42 +947,42 @@ void state_t::build()
    }
 }
 
-void state_t::add_net(int nid, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate)
+void state_t::add_net(int nid, std::vector<int> &nids, std::set<int> &nid_set, std::set<int> &changed, std::set<node *> &accepted_trans, std::map<int, std::vector<node *> > &rejected_trans_per_gate)
 {
   if(nid_set.find(nid) == nid_set.end()) {
     nids.push_back(nid);
     nid_set.insert(nid);
-    set<int>::iterator ci = changed.find(nid);
+    std::set<int>::iterator ci = changed.find(nid);
     if(ci != changed.end())
       changed.erase(ci);
-    map<int, list<node *> >::iterator j = rejected_trans_per_gate.find(nid);
+    std::map<int, std::vector<node *> >::iterator j = rejected_trans_per_gate.find(nid);
     if(j != rejected_trans_per_gate.end()) {
-      list<node *> n = j->second;
+      std::vector<node *> n = j->second;
       rejected_trans_per_gate.erase(j);
-      for(list<node *>::const_iterator k = n.begin(); k != n.end(); k++)
+      for(std::vector<node *>::const_iterator k = n.begin(); k != n.end(); k++)
 	add_transistor(*k, nids, nid_set, changed, accepted_trans, rejected_trans_per_gate);
     }
   }
 }
 
-void state_t::add_transistor(node *tr, vector<int> &nids, set<int> &nid_set, set<int> &changed, set<node *> &accepted_trans, map<int, list<node *> > &rejected_trans_per_gate)
+void state_t::add_transistor(node *tr, std::vector<int> &nids, std::set<int> &nid_set, std::set<int> &changed, std::set<node *> &accepted_trans, std::map<int, std::vector<node *> > &rejected_trans_per_gate)
 {
   accepted_trans.insert(tr);
   add_net(tr->netids[node::T1], nids, nid_set, changed, accepted_trans, rejected_trans_per_gate);
   add_net(tr->netids[node::T2], nids, nid_set, changed, accepted_trans, rejected_trans_per_gate);
 }
 
-void state_t::build_equation(string &equation, vector<int> &constants, const vector<int> &nids_to_solve, const vector<int> &levels, const set<node *> &accepted_trans, const map<int, int> &nid_to_index) const
+void state_t::build_equation(std::string &equation, std::vector<int> &constants, const std::vector<int> &nids_to_solve, const std::vector<int> &levels, const std::set<node *> &accepted_trans, const std::map<int, int> &nid_to_index) const
 {
   constants.clear();
   equation = "";
-  for(set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
+  for(std::set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
     node *tr = *j;
     int nt1 = tr->netids[node::T1];
     int ng  = tr->netids[node::GATE];
     int nt2 = tr->netids[node::T2];
 
-    map<int, int>::const_iterator k;
+    std::map<int, int>::const_iterator k;
 
     k = nid_to_index.find(nt1);
     int t1_id   = k == nid_to_index.end() ? -1 : k->second;
@@ -1036,7 +1036,7 @@ void state_t::minmax(int &minv, int &maxv, int value)
     maxv = value;
 }
 
-string state_t::i2v(int id)
+std::string state_t::i2v(int id)
 {
   char buf[32];
   if(id < 26) {
@@ -1050,34 +1050,34 @@ string state_t::i2v(int id)
   return buf;
 }
 
-void state_t::apply_changed(set<int> changed)
+void state_t::apply_changed(std::set<int> changed)
 {
   int ctime = 0;
-  map<int, map<int, int> > future_changes;
-  map<int, int> future_changes_times;
+  std::map<int, std::map<int, int> > future_changes;
+  std::map<int, int> future_changes_times;
   while(!changed.empty()) {
-    list<int> changed_through_gate;
-    for(set<int>::const_iterator i = changed.begin(); i != changed.end(); i++)
-      for(vector<int>::const_iterator j = gate_to_trans[*i].begin(); j != gate_to_trans[*i].end(); j++) {
+    std::vector<int> changed_through_gate;
+    for(std::set<int>::const_iterator i = changed.begin(); i != changed.end(); i++)
+      for(std::vector<int>::const_iterator j = gate_to_trans[*i].begin(); j != gate_to_trans[*i].end(); j++) {
 	changed_through_gate.push_back(nodes[*j]->netids[node::T1]);
 	changed_through_gate.push_back(nodes[*j]->netids[node::T2]);
       }
-    for(list<int>::const_iterator i = changed_through_gate.begin(); i != changed_through_gate.end(); i++)
+    for(std::vector<int>::const_iterator i = changed_through_gate.begin(); i != changed_through_gate.end(); i++)
       changed.insert(*i);
 
     while(!changed.empty()) {
       bool verb = false;
-      vector<int> nids;
-      set<int> nid_set;
-      set<node *> accepted_trans;
-      map<int, list<node *> > rejected_trans_per_gate;
+      std::vector<int> nids;
+      std::set<int> nid_set;
+      std::set<node *> accepted_trans;
+      std::map<int, std::vector<node *> > rejected_trans_per_gate;
       int nid = *changed.begin();
       changed.erase(changed.begin());
       nids.push_back(nid);
       nid_set.insert(nid);
       for(int nididx=0; nididx != int(nids.size()); nididx++) {
 	int nid = nids[nididx];
-	for(vector<int>::const_iterator i = term_to_trans[nid].begin(); i != term_to_trans[nid].end(); i++) {
+	for(std::vector<int>::const_iterator i = term_to_trans[nid].begin(); i != term_to_trans[nid].end(); i++) {
 	  node *tr = nodes[*i];
 	  int nt1 = tr->netids[node::T1];
 	  int nt2 = tr->netids[node::T2];
@@ -1090,15 +1090,15 @@ void state_t::apply_changed(set<int> changed)
 	}
       }
 
-      vector<int> nids_to_solve;
-      for(vector<int>::const_iterator i = nids.begin(); i != nids.end(); i++)
+      std::vector<int> nids_to_solve;
+      for(std::vector<int>::const_iterator i = nids.begin(); i != nids.end(); i++)
 	if(!is_fixed[*i]) {
 	  assert(nets[*i]->name != "gnd" && nets[*i]->name != "vcc");
 	  nids_to_solve.push_back(*i);
 	}
       if(!nids_to_solve.empty() && !accepted_trans.empty()) {
 	int minv = INT_MAX, maxv = INT_MIN;
-	for(set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
+	for(std::set<node *>::const_iterator j = accepted_trans.begin(); j != accepted_trans.end(); j++) {
 	  node *tr = *j;
 	  int nt1 = tr->netids[node::T1];
 	  int nt2 = tr->netids[node::T2];
@@ -1108,21 +1108,21 @@ void state_t::apply_changed(set<int> changed)
 	  minmax(minv, maxv, power[ng]);
 	}
 
-	map<int, int> nid_to_index;
+	std::map<int, int> nid_to_index;
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  nid_to_index[nids_to_solve[i]] = i;
 
-	vector<int> levels;
+	std::vector<int> levels;
 	levels.resize(nids_to_solve.size());
 	for(unsigned int i = 0; i != nids_to_solve.size(); i++)
 	  levels[i] = power[nids_to_solve[i]];
 
-	string equation;
-	vector<int> constants;
+	std::string equation;
+	std::vector<int> constants;
 	build_equation(equation, constants, nids_to_solve, levels, accepted_trans, nid_to_index);
 	if(equation == "Ta.. Daa. Taab")
 	  verb = true;
-	map<string, void (*)(const vector<int> &constants, vector<int> &level)>::const_iterator sp = solvers.find(equation);
+	std::map<std::string, void (*)(const std::vector<int> &constants, std::vector<int> &level)>::const_iterator sp = solvers.find(equation);
 	if(sp == solvers.end()) {
 	  printf("Unhandled equation system.\n");
 	  dump_equation_system(equation, constants, nids_to_solve, accepted_trans);
@@ -1159,7 +1159,7 @@ void state_t::apply_changed(set<int> changed)
 	  int nid = nids_to_solve[i];
 	  if(levels[i] != power[nid]) {
 	    int ntime = ctime + delay[nid];
-	    map<int, int>::const_iterator j = future_changes_times.find(nid);
+	    std::map<int, int>::const_iterator j = future_changes_times.find(nid);
 	    if(j != future_changes_times.end())
 	      ntime = j->second;
 	    else
@@ -1172,8 +1172,8 @@ void state_t::apply_changed(set<int> changed)
 
     if(!future_changes.empty()) {
       ctime = future_changes.begin()->first;
-      const map<int, int> &mc = future_changes.begin()->second;
-      for(map<int, int>::const_iterator i = mc.begin(); i != mc.end(); i++) {
+      const std::map<int, int> &mc = future_changes.begin()->second;
+      for(std::map<int, int>::const_iterator i = mc.begin(); i != mc.end(); i++) {
 	future_changes_times.erase(future_changes_times.find(i->first));
 	power[i->first] = i->second;
 	changed.insert(i->first);
@@ -1184,7 +1184,7 @@ void state_t::apply_changed(set<int> changed)
   }
 }
 
-string state_t::c2s(int vr, const vector<int> &constants, int pos)
+std::string state_t::c2s(int vr, const std::vector<int> &constants, int pos)
 {
   char buf[64];
   if(vr)
@@ -1194,7 +1194,7 @@ string state_t::c2s(int vr, const vector<int> &constants, int pos)
   return buf;
 }
 
-int state_t::get_id(string equation, unsigned int &pos)
+int state_t::get_id(std::string equation, unsigned int &pos)
 {
   char c = equation[pos++];
   if(c == '.')
@@ -1206,14 +1206,14 @@ int state_t::get_id(string equation, unsigned int &pos)
   if(c != '<')
     fprintf(stderr, "[%s] %d %c\n", equation.c_str(), pos-1, c);
   assert(c == '<');
-  string r;
+  std::string r;
   while(equation[pos] != '>')
     r = r + equation[pos++];
   pos++;
   return strtol(r.c_str()+52, 0, 10);
 }
 
-void state_t::dump_equation_system(string equation, const vector<int> &constants, const vector<int> &nids_to_solve, const set<node *> &accepted_trans)
+void state_t::dump_equation_system(std::string equation, const std::vector<int> &constants, const std::vector<int> &nids_to_solve, const std::set<node *> &accepted_trans)
 {
   printf("  key: %s\n", equation.c_str());
   printf("  fct: ");
@@ -1235,7 +1235,7 @@ void state_t::dump_equation_system(string equation, const vector<int> &constants
   printf("\n");
 
   for(int vr=0; vr<2; vr++) {
-    set<node *>::const_iterator aci = accepted_trans.begin();
+    std::set<node *>::const_iterator aci = accepted_trans.begin();
     if(vr)
       printf("  mosfets k:\n");
     else
@@ -1285,13 +1285,13 @@ void state_t::pull(int &term, int gate, int oterm)
     term = oterm;
 }
 
-void state_t::Ta__(const vector<int> &constants, vector<int> &level)
+void state_t::Ta__(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   pull(level[0], constants[1], constants[2]);
 }
 
-void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, b)
   if(level[0] == level[1])
@@ -1313,14 +1313,14 @@ void state_t::Ta_b(const vector<int> &constants, vector<int> &level)
   }
 }
 
-void state_t::Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(a, a, k1)
   level[0] = constants[1];
 }
 
 
-void state_t::Da__(const vector<int> &constants, vector<int> &level)
+void state_t::Da__(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(a, k1, k2)
   int thr = constants[1] - ED;
@@ -1330,7 +1330,7 @@ void state_t::Da__(const vector<int> &constants, vector<int> &level)
     level[0] = thr;
 }
 
-void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Daa__Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(a, a, k1)
   // T.k2.(a, k3, b)
@@ -1338,7 +1338,7 @@ void state_t::Daa__Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[1], constants[3], level[0]);
 }
 
-void state_t::Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Dbb__Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(b, b, k1)
   // T.k2.(a, k3, b)
@@ -1346,7 +1346,7 @@ void state_t::Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[0], constants[3], level[1]);
 }
 
-void state_t::Ta___Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, b)
@@ -1354,7 +1354,7 @@ void state_t::Ta___Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[1], constants[4], level[0]);
 }
 
-void state_t::Tb___Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Tb___Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, k1, k2)
   // T.k3.(a, k4, b)
@@ -1362,7 +1362,7 @@ void state_t::Tb___Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[0], constants[4], level[1]);
 }
 
-void state_t::Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
+void state_t::Ta_b_Ta_c(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, b)
   // T.k2.(a, k3, c)
@@ -1375,7 +1375,7 @@ void state_t::Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
   //  abort();
 }
 
-void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, a, k4)
@@ -1392,7 +1392,7 @@ void state_t::Ta___Daa_(const vector<int> &constants, vector<int> &level)
   }
 }
 
-void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta__(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
@@ -1431,7 +1431,7 @@ void state_t::Ta___Ta__(const vector<int> &constants, vector<int> &level)
   }
 }
 
-void state_t::Ta___Ta___Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta___Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
@@ -1466,7 +1466,7 @@ void state_t::Ta___Ta___Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[1], constants[6], level[0]);
 }
 
-void state_t::Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Tbb__Taa__Ta___Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, b, k1)
   // T.k2.(a, a, k3)
@@ -1490,7 +1490,7 @@ void state_t::Tbb__Taa__Ta___Taab(const vector<int> &constants, vector<int> &lev
   level[1] = int(rb+0.5);
 }
 
-void state_t::Dbb__Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
+void state_t::Dbb__Ta_b_Tb_c(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(b, b, k1)
   // T.k2.(a, k3, b)
@@ -1500,7 +1500,7 @@ void state_t::Dbb__Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
   pull(level[2], constants[5], level[1]);
 }
 
-void state_t::Daa__Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
+void state_t::Daa__Ta_b_Ta_c(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(a, a, k1)
   // T.k2.(a, k3, b)
@@ -1510,7 +1510,7 @@ void state_t::Daa__Ta_b_Ta_c(const vector<int> &constants, vector<int> &level)
   pull(level[2], constants[5], level[0]);
 }
 
-void state_t::Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
+void state_t::Ta_b_Tb_c(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, b)
   // T.k2.(b, k3, c)
@@ -1523,7 +1523,7 @@ void state_t::Ta_b_Tb_c(const vector<int> &constants, vector<int> &level)
   //  abort();
 }
 
-void state_t::Ta___Dabb(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Dabb(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, b, b)
@@ -1531,7 +1531,7 @@ void state_t::Ta___Dabb(const vector<int> &constants, vector<int> &level)
   level[1] = level[0];
 }
 
-void state_t::Tc___Dbb__Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Tc___Dbb__Ta___Tbac_Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(c, k1, k2)
   // D.k3.(b, b, k4)
@@ -1543,7 +1543,7 @@ void state_t::Tc___Dbb__Ta___Tbac_Taab(const vector<int> &constants, vector<int>
   level[0] = constants[7] - ET;
 }
 
-void state_t::Dbb__Tc___Ta___Tbac_Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Dbb__Tc___Ta___Tbac_Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(b, b, k1)
   // T.k2.(c, k3, k4)
@@ -1555,7 +1555,7 @@ void state_t::Dbb__Tc___Ta___Tbac_Taab(const vector<int> &constants, vector<int>
   level[0] = constants[7] - ET;
 }
 
-void state_t::Ta___Dabb_Dacc_Dadd_Daee(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Dabb_Dacc_Dadd_Daee(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, b, b)
@@ -1569,7 +1569,7 @@ void state_t::Ta___Dabb_Dacc_Dadd_Daee(const vector<int> &constants, vector<int>
   level[4] = level[0];
 }
 
-void state_t::Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Dabb_Dacc_Dadd_Daee_Daff(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, b, b)
@@ -1585,7 +1585,7 @@ void state_t::Ta___Dabb_Dacc_Dadd_Daee_Daff(const vector<int> &constants, vector
   level[5] = level[0];
 }
 
-void state_t::Daa__Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Daa__Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // D.k0.(a, a, k1)
   // T.k2.(a, a, b)
@@ -1593,7 +1593,7 @@ void state_t::Daa__Taab(const vector<int> &constants, vector<int> &level)
   pull(level[1], level[0], level[0]);
 }
 
-void state_t::Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Tbb__Daa__Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, b, k1)
   // D.k2.(a, a, k3)
@@ -1615,7 +1615,7 @@ void state_t::Tbb__Daa__Taab(const vector<int> &constants, vector<int> &level)
   level[1] = int(rb+0.5);
 }
 
-void state_t::Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta___Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
@@ -1630,7 +1630,7 @@ void state_t::Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
   level[0] = int(ra*10+0.5);
 }
 
-void state_t::Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const vector<int> &constants, vector<int> &level)
+void state_t::Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, k1, k2)
   // T.k3.(c, k4, k5)
@@ -1649,7 +1649,7 @@ void state_t::Tb___Tc___Te___Ta_b_Ta_c_Ta_d_Ta_e_Ta_f(const vector<int> &constan
   level[5] = 0;
 }
 
-void state_t::Ta___Daa__Taab(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Daa__Taab(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // D.k3.(a, a, k4)
@@ -1670,7 +1670,7 @@ void state_t::Ta___Daa__Taab(const vector<int> &constants, vector<int> &level)
   pull(level[1], level[0], level[0]);
 }
 
-void state_t::Tb___Dbb__Tabb(const vector<int> &constants, vector<int> &level)
+void state_t::Tb___Dbb__Tabb(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, k1, k2)
   // D.k3.(b, b, k4)
@@ -1691,7 +1691,7 @@ void state_t::Tb___Dbb__Tabb(const vector<int> &constants, vector<int> &level)
   pull(level[0], level[1], level[1]);
 }
 
-void state_t::Tb___Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
+void state_t::Tb___Dbb__Ta_b(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(b, k1, k2)
   // D.k3.(b, b, k4)
@@ -1712,7 +1712,7 @@ void state_t::Tb___Dbb__Ta_b(const vector<int> &constants, vector<int> &level)
   pull(level[0], constants[6], level[1]);
 }
 
-void state_t::Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta___Ta___Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
@@ -1735,7 +1735,7 @@ void state_t::Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &lev
   level[0] = int(ra*10+0.5);
 }
 
-void state_t::Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta___Ta___Ta___Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)
@@ -1761,7 +1761,7 @@ void state_t::Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int>
   level[0] = int(ra*10+0.5);
 }
 
-void state_t::Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const vector<int> &constants, vector<int> &level)
+void state_t::Ta___Ta___Ta___Ta___Ta___Ta___Ta___Daa_(const std::vector<int> &constants, std::vector<int> &level)
 {
   // T.k0.(a, k1, k2)
   // T.k3.(a, k4, k5)

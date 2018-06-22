@@ -21,14 +21,11 @@ CHECK_TYPE_SIZE(long SIZEOF_LONG)
 # libgcc and libstdc++ will also be required.
 find_package(Freetype REQUIRED)
 include_directories(${FREETYPE_INCLUDE_DIRS})
-find_package(lua REQUIRED)
+find_package(Lua REQUIRED)
 include_directories(${LUA_INCLUDE_DIR})
-find_package(zlib REQUIRED)
+find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
-find_package(Qt5Gui)
-find_package(Qt5Widgets)
-# This doesn't work! Why?
-# find_package(Qt REQUIRED COMPONENTS Qt5Gui Qt5Widgets)
+find_package(Qt5 COMPONENTS Gui Widgets REQUIRED)
 
 include_directories("${PROJECT_SOURCE_DIR}/libdie")
 add_subdirectory(generate-bitmask-images)

@@ -8,3 +8,14 @@ mschem/mschem
 sview/sview
 mview/mview
 logx/logx
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+libdie/die_autogen
+logx/logx_autogen
+mschem/mschem_autogen
+mview/mview_autogen
+sview/sview_autogen
+generate-bitmask-images/generate-bitmask-images_autogen
+generate-circuit/generate-circuit_autogen

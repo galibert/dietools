@@ -7,14 +7,14 @@
 #include <string>
 
 struct pinfo {
-  string name;
+  std::string name;
   int x, y, net;
   char orientation;
 };
 
 class pad_info {
 public:
-  vector<pinfo> pads;
+  std::vector<pinfo> pads;
 
   pad_info(const char *fname, const net_info &info);
 };

@@ -17,21 +17,21 @@ public:
 
   int vcc, gnd;
   bool cmos;
-  vector<bool> quasi_vcc;
-  vector<bool> oscillator;
-  vector<int> ttype;
-  vector<bool> ignored;
-  vector<bool> pullup, pulldown;
-  vector<bool> display;
-  vector<int> forced_power;
-  vector<int> power;
-  vector<int> power_dist;
+  std::vector<bool> quasi_vcc;
+  std::vector<bool> oscillator;
+  std::vector<int> ttype;
+  std::vector<bool> ignored;
+  std::vector<bool> pullup, pulldown;
+  std::vector<bool> display;
+  std::vector<int> forced_power;
+  std::vector<int> power;
+  std::vector<int> power_dist;
 
   State(const char *info_path, const char *cmap_path, const char *pins_path, bool cmos);
 
   void reset_to_floating();
   void reset_to_zero();
-  void apply_changed(set<int> changed);
+  void apply_changed(std::set<int> changed);
 };
 
 #endif

@@ -17,7 +17,6 @@
 
 #include <set>
 #include <map>
-#include <list>
 #include <vector>
 
 #include <boost/bind.hpp>
@@ -85,7 +84,7 @@ struct circuit_info {
   int surface;
   int x0, y0, x1, y1;
   int net, netp, metal;
-  set<int> neighbors;
+  std::set<int> neighbors;
 };
 
 struct via_info {
@@ -108,7 +107,7 @@ struct trans_info {
 };
 
 struct via_map {
-  map<int, list<int> > metal_to_ap, ap_to_metal;
+  std::map<int, std::vector<int> > metal_to_ap, ap_to_metal;
 };
 
 struct fill_coord {
@@ -121,7 +120,7 @@ struct metal_link_info {
   int circuit_id;
 };
 
-void fill_1(list<fill_coord> &fc, int x, int y, int sx, int sy, int color, boost::function<void(int, int)> set_pixel, boost::function<int(int, int)> read_color, boost::function<bool(int, int)> test_pixel)
+void fill_1(std::vector<fill_coord> &fc, int x, int y, int sx, int sy, int color, boost::function<void(int, int)> set_pixel, boost::function<int(int, int)> read_color, boost::function<bool(int, int)> test_pixel)
 {
   if(test_pixel(x, y))
     return;
@@ -148,12 +147,12 @@ void fill_1(list<fill_coord> &fc, int x, int y, int sx, int sy, int color, boost
 
 void fill(int x, int y, int sx, int sy, int color, boost::function<void(int, int)> set_pixel, boost::function<int(int, int)> read_color, boost::function<bool(int, int)> test_pixel)
 {
-  list<fill_coord> fc;
+  std::vector<fill_coord> fc;
   fc.push_back(fill_coord(x, y));
   while(!fc.empty()) {
     int xx = fc.front().x;
     int yy = fc.front().y;
-    fc.pop_front();
+    fc.erase(fc.begin());
     fill_1(fc, xx, yy, sx, sy, color, set_pixel, read_color, test_pixel);
   }
 }
@@ -246,7 +245,7 @@ bool circuit_test(int x, int y, int cid, const circuit_map *dest, int l)
   return dest->p(l, x, y) == cid;
 }
 
-void build_circuits(time_info &tinfo, boost::function<int(int, int)> color, vector<circuit_info> &circuits, circuit_map *dest, int l)
+void build_circuits(time_info &tinfo, boost::function<int(int, int)> color, std::vector<circuit_info> &circuits, circuit_map *dest, int l)
 {
   for(int y=0; y<dest->sy; y++) {
     tinfo.tick(y, dest->sy);
@@ -271,7 +270,7 @@ void build_circuits(time_info &tinfo, boost::function<int(int, int)> color, vect
   }
 }
 
-static void build_neighbors_add(vector<circuit_info> &circuits, int cm, int x, int y, int cn)
+static void build_neighbors_add(std::vector<circuit_info> &circuits, int cm, int x, int y, int cn)
 {
   if(cn == -1 || cn == cm)
     return;
@@ -281,7 +280,7 @@ static void build_neighbors_add(vector<circuit_info> &circuits, int cm, int x, i
     circuits[cm].neighbors.insert(cn);
 }
 
-void build_neighbors(time_info &tinfo, vector<circuit_info> &circuits, const circuit_map &cmap)
+void build_neighbors(time_info &tinfo, std::vector<circuit_info> &circuits, const circuit_map &cmap)
 {
   for(int y=1; y<cmap.sy-1; y++) {
     tinfo.tick(y-1, cmap.sy-2);
@@ -297,7 +296,7 @@ void build_neighbors(time_info &tinfo, vector<circuit_info> &circuits, const cir
   }
 }
 
-void build_transistor_groups(list<set<int> > &groups, int &terminaux, int &gates, vector<bool> &is_terminal, vector<bool> &is_gate, const vector<circuit_info> &circuits, int id)
+void build_transistor_groups(std::vector<set<int> > &groups, int &terminaux, int &gates, std::vector<bool> &is_terminal, std::vector<bool> &is_gate, const std::vector<circuit_info> &circuits, int id)
 {
   const circuit_info &ci = circuits[id];
   terminaux = 0;
@@ -307,7 +306,7 @@ void build_transistor_groups(list<set<int> > &groups, int &terminaux, int &gates
       const circuit_info &ci1 = circuits[*j];
       if(step ^ (ci1.type != BURIED && ci1.type != CAPACITOR))
 	continue;
-      list<set<int> >::iterator l;
+      std::vector<set<int> >::iterator l;
       for(l = groups.begin(); l != groups.end(); l++) {
 	for(set<int>::const_iterator k = l->begin(); k != l->end(); k++)
 	  if(ci1.neighbors.find(*k) != ci1.neighbors.end()) {
@@ -339,7 +338,7 @@ void build_transistor_groups(list<set<int> > &groups, int &terminaux, int &gates
   }
 }
 
-void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_map &cmap)
+void clean_and_remap(time_info &tinfo, std::vector<circuit_info> &circuits, circuit_map &cmap)
 {
   bool has_error = false;
 
@@ -372,8 +371,8 @@ void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_m
       remap_poly[i] = -1;
       break;
     case TRANSISTOR: {
-      list<set<int> > groups;
-      vector<bool> is_gate, is_terminal;
+      std::vector<set<int> > groups;
+      std::vector<bool> is_gate, is_terminal;
       int terminaux, gates;
       build_transistor_groups(groups, terminaux, gates, is_terminal, is_gate, circuits, i);
       if(terminaux < 2) { //  || (ci.x0 - ci.x1 <= 2 && ci.x0 - ci.x1 >= -2) || (ci.y0 - ci.y1 <= 2 && ci.y0 - ci.y1 >= -2)) {
@@ -445,9 +444,9 @@ void clean_and_remap(time_info &tinfo, vector<circuit_info> &circuits, circuit_m
   }
 }
 
-void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, list<metal_link_info> &virtual_poly_id, circuit_map &cmap)
+void compress_ids(time_info &tinfo, std::vector<circuit_info> &circuit_infos, std::vector<metal_link_info> &virtual_poly_id, circuit_map &cmap)
 {
-  vector<int> remap;
+  std::vector<int> remap;
   remap.resize(circuit_infos.size());
   unsigned int cid = 0;
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
@@ -470,7 +469,7 @@ void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, list<me
       }
   }
 
-  for(list<metal_link_info>::iterator i = virtual_poly_id.begin(); i != virtual_poly_id.end(); i++)
+  for(std::vector<metal_link_info>::iterator i = virtual_poly_id.begin(); i != virtual_poly_id.end(); i++)
     i->circuit_id = remap[i->circuit_id];
 
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
@@ -482,7 +481,7 @@ void compress_ids(time_info &tinfo, vector<circuit_info> &circuit_infos, list<me
   }
 }
 
-void map_vias_set(int x, int y, via_info *via, const vector<circuit_info> *circuit_infos, pbm *used, circuit_map *cmap)
+void map_vias_set(int x, int y, via_info *via, const std::vector<circuit_info> *circuit_infos, pbm *used, circuit_map *cmap)
 {
   used->s(x, y, true);
   int na = cmap->p(0, x, y);
@@ -509,7 +508,7 @@ void map_vias_set(int x, int y, via_info *via, const vector<circuit_info> *circu
   }
 }
 
-void map_vias(time_info &tinfo, vector<via_info> &via_infos, via_map &via_maps, const vector<circuit_info> &circuit_infos, const pbm *vias, circuit_map &cmap)
+void map_vias(time_info &tinfo, std::vector<via_info> &via_infos, via_map &via_maps, const std::vector<circuit_info> &circuit_infos, const pbm *vias, circuit_map &cmap)
 {
   pbm used(cmap.sx, cmap.sy);
   for(int y=0; y<cmap.sy; y++) {
@@ -540,17 +539,17 @@ void map_vias(time_info &tinfo, vector<via_info> &via_infos, via_map &via_maps, 
   }
 }
 
-void via_list_add(list<int> &stack, const map<int, list<int> > vmap, int id, const vector<circuit_info> &circuit_infos)
+void via_list_add(std::vector<int> &stack, const map<int, std::vector<int> > vmap, int id, const std::vector<circuit_info> &circuit_infos)
 {
-  map<int, list<int> >::const_iterator vi = vmap.find(id);
+  map<int, std::vector<int> >::const_iterator vi = vmap.find(id);
   if(vi == vmap.end())
     return;
-  for(list<int>::const_iterator i = vi->second.begin(); i != vi->second.end(); i++)
+  for(std::vector<int>::const_iterator i = vi->second.begin(); i != vi->second.end(); i++)
     if(circuit_infos[*i].net == -1)
       stack.push_back(*i);
 }
 
-void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_info> &circuit_infos, const via_map &via_maps, bool has_poly, int sx, int sy)
+void build_nets(time_info &tinfo, std::vector<net_info> &net_infos, std::vector<circuit_info> &circuit_infos, const via_map &via_maps, bool has_poly, int sx, int sy)
 {
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
     //    tinfo.tick(i, circuit_infos.size());
@@ -560,13 +559,13 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
       int nid = net_infos.size();
       net_infos.resize(nid+1);
       set<int> &circuits = net_infos[nid].circuits;
-      list<int> stack;
+      std::vector<int> stack;
       assert(circuit_infos[i].type != CAPACITOR);
       stack.push_back(i + (circuit_infos[i].type == POLY ? 1000000 : 0));
       do {
 	int cid = stack.front();
 	int pcid = cid;
-	stack.pop_front();
+	stack.erase(stack.begin());
 	int start_stack_size = stack.size();
 	int is_poly = cid / 1000000;
 	cid = cid % 1000000;
@@ -665,7 +664,7 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 	}
 
 	if(false && !nid) {
-	  list<int>::const_iterator i = stack.begin();
+	  std::vector<int>::const_iterator i = stack.begin();
 	  for(int ii=0; ii<start_stack_size; ii++)
 	    i++;
 	  printf("%d:", cid);
@@ -676,7 +675,7 @@ void build_nets(time_info &tinfo, vector<net_info> &net_infos, vector<circuit_in
 #if 0
 	fprintf(stderr, "  + %c%d %d (%d, %d)-(%d, %d)", type_names[ci.type], cid, is_poly, ci.x0, cmap.sy-1-ci.y1, ci.x1, cmap.sy-1-ci.y0);
 	fprintf(stderr, "    ");
-	for(list<int>::const_iterator j = stack.begin(); j != stack.end(); j++)
+	for(std::vector<int>::const_iterator j = stack.begin(); j != stack.end(); j++)
 	  fprintf(stderr, " %d", *j);
 	fprintf(stderr, "\n");
 #endif
@@ -698,7 +697,7 @@ double build_transistors_compute_force_dir(const set<int> &src, const set<int> &
   int sx = gci.x1-gci.x0+1 + 4;
   int sy = gci.y1-gci.y0+1 + 4;
   double *grid = new double[sx*sy];
-  list<pair<int, int> > dests;
+  std::vector<pair<int, int> > dests;
   int x0 = gci.x0 - 2;
   int y0 = gci.y0 - 2;
   double *g = grid;
@@ -754,7 +753,7 @@ double build_transistors_compute_force_dir(const set<int> &src, const set<int> &
   }
   double f = 0;
   double midx = 0, midy = 0;
-  for(list<pair<int, int> >::const_iterator i = dests.begin(); i != dests.end(); i++) {
+  for(std::vector<pair<int, int> >::const_iterator i = dests.begin(); i != dests.end(); i++) {
     g = grid + i->second*sx + i->first;
     double v = -100000;
     v = dist_min(v, g[-1-sx] + M_SQRT2);
@@ -790,13 +789,13 @@ double build_transistors_compute_force(const set<int> &t1, const set<int> &t2, i
   return 0.5*(f1 + f2);
 }
 
-void build_transistors(time_info &tinfo, vector<trans_info> &trans_infos, const vector<net_info> &net_infos, const vector<circuit_info> &circuit_infos, const circuit_map &cmap)
+void build_transistors(time_info &tinfo, std::vector<trans_info> &trans_infos, const std::vector<net_info> &net_infos, const std::vector<circuit_info> &circuit_infos, const circuit_map &cmap)
 {
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
     tinfo.tick(i, circuit_infos.size());
     if(circuit_infos[i].type == TRANSISTOR) {
-      list<set<int> > groups;
-      vector<bool> is_gate, is_terminal;
+      std::vector<set<int> > groups;
+      std::vector<bool> is_gate, is_terminal;
       int terminaux, gates;
       build_transistor_groups(groups, terminaux, gates, is_terminal, is_gate, circuit_infos, i);
 
@@ -805,11 +804,11 @@ void build_transistors(time_info &tinfo, vector<trans_info> &trans_infos, const 
       int *midx = new int[ng*ng];
       int *midy = new int[ng*ng];
       int j=0;
-      for(list<set<int> >::const_iterator ji = groups.begin(); ji != groups.end(); ji++, j++) {
+      for(std::vector<set<int> >::const_iterator ji = groups.begin(); ji != groups.end(); ji++, j++) {
 	if(!is_terminal[j])
 	  continue;
 	int k = j+1;
-	list<set<int> >::const_iterator ki = ji;
+	std::vector<set<int> >::const_iterator ki = ji;
 	ki++;
 	for(;ki != groups.end();ki++, k++) {
 	  if(!is_terminal[k])
@@ -819,13 +818,13 @@ void build_transistors(time_info &tinfo, vector<trans_info> &trans_infos, const 
 	}
       }
 
-      vector<int> nets;
-      vector<bool> linked;
+      std::vector<int> nets;
+      std::vector<bool> linked;
       linked.resize(ng);
       for(j=0; j<ng; j++)
 	linked[j] = false;
 
-      for(list<set<int> >::const_iterator ji = groups.begin(); ji != groups.end(); ji++)
+      for(std::vector<set<int> >::const_iterator ji = groups.begin(); ji != groups.end(); ji++)
 	nets.push_back(circuit_infos[*ji->begin()].net);
 
       for(j=0; j<ng; j++) {
@@ -865,7 +864,7 @@ void build_transistors(time_info &tinfo, vector<trans_info> &trans_infos, const 
 }
 
 
-void build_transistors_metal_gate(time_info &tinfo, vector<trans_info> &trans_infos, const vector<net_info> &net_infos, const vector<circuit_info> &circuit_infos, const circuit_map &cmap)
+void build_transistors_metal_gate(time_info &tinfo, std::vector<trans_info> &trans_infos, const std::vector<net_info> &net_infos, const std::vector<circuit_info> &circuit_infos, const circuit_map &cmap)
 {
   for(unsigned int i=0; i != circuit_infos.size(); i++) {
     tinfo.tick(i, circuit_infos.size());
@@ -895,7 +894,7 @@ void build_transistors_metal_gate(time_info &tinfo, vector<trans_info> &trans_in
   }
 }
 
-void circuit_stats(const vector<circuit_info> &circuit_infos)
+void circuit_stats(const std::vector<circuit_info> &circuit_infos)
 {
   int t[7];
   t[0] = t[1] = t[2] = t[3] = t[4] = t[5] = t[6] = 0;
@@ -906,7 +905,7 @@ void circuit_stats(const vector<circuit_info> &circuit_infos)
 	  t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[0]+t[1]+t[2]+t[3]+t[4]+t[5]+t[6]);
 }
 
-void dump(FILE *out, int sx, int sy, int nl, const vector<circuit_info> &circuit_infos)
+void dump(FILE *out, int sx, int sy, int nl, const std::vector<circuit_info> &circuit_infos)
 {
   fprintf(out, "%d %d %d\n", sx, sy, nl);
   fprintf(out, "%d circuits\n", int(circuit_infos.size()));
@@ -919,7 +918,7 @@ void dump(FILE *out, int sx, int sy, int nl, const vector<circuit_info> &circuit
   }
 }
 
-void dump(FILE *out, int sx, int sy, int nl, const vector<net_info> &net_infos)
+void dump(FILE *out, int sx, int sy, int nl, const std::vector<net_info> &net_infos)
 {
   fprintf(out, "%d nets\n", int(net_infos.size()));
   for(unsigned int i=0; i != net_infos.size(); i++) {
@@ -931,7 +930,7 @@ void dump(FILE *out, int sx, int sy, int nl, const vector<net_info> &net_infos)
   }
 }
 
-void dump(FILE *out, int sx, int sy, int nl, const vector<trans_info> &trans_infos)
+void dump(FILE *out, int sx, int sy, int nl, const std::vector<trans_info> &trans_infos)
 {
   fprintf(out, "%d transistors\n", int(trans_infos.size()));
   for(unsigned int i=0; i != trans_infos.size(); i++) {
@@ -940,7 +939,7 @@ void dump(FILE *out, int sx, int sy, int nl, const vector<trans_info> &trans_inf
   }
 }
 
-void dump(const char *fname, int sx, int sy, int nl, const vector<trans_info> &trans_infos, const vector<net_info> &net_infos, const vector<circuit_info> &circuit_infos)
+void dump(const char *fname, int sx, int sy, int nl, const std::vector<trans_info> &trans_infos, const std::vector<net_info> &net_infos, const std::vector<circuit_info> &circuit_infos)
 {
   FILE *out = fopen(fname, "w");
   dump(out, sx, sy, nl, circuit_infos);
@@ -950,7 +949,7 @@ void dump(const char *fname, int sx, int sy, int nl, const vector<trans_info> &t
 }
 
 // Add a virtual circuit between the two vcc domains
-void add_virtual_circuit(vector<circuit_info> &circuit_infos, metal_link_info &ml, int sy, bool has_poly)
+void add_virtual_circuit(std::vector<circuit_info> &circuit_infos, metal_link_info &ml, int sy, bool has_poly)
 {
   int id = circuit_infos.size();
   circuit_infos.resize(id+1);
@@ -966,7 +965,7 @@ void add_virtual_circuit(vector<circuit_info> &circuit_infos, metal_link_info &m
 }
 
 // Add a pair of virtual vias with the virtual circuit
-void add_virtual_vias(vector<via_info> &via_infos, via_map &via_maps, metal_link_info &ml, const circuit_map &cmap)
+void add_virtual_vias(std::vector<via_info> &via_infos, via_map &via_maps, metal_link_info &ml, const circuit_map &cmap)
 {
   int vcc1 = cmap.p(cmap.nl >= 3 ? 2 : 1, ml.x1, cmap.sy-1-ml.y1);
   int vcc2 = cmap.p(cmap.nl >= 3 ? 2 : 1, ml.x2, cmap.sy-1-ml.y2);
@@ -979,7 +978,7 @@ void add_virtual_vias(vector<via_info> &via_infos, via_map &via_maps, metal_link
 }
 
 // In a metal gates circuit, lookup the metal net corresponding to gates and caps
-void lookup_gates_and_caps(time_info &tinfo, vector<circuit_info> &circuit_infos, const circuit_map &cmap)
+void lookup_gates_and_caps(time_info &tinfo, std::vector<circuit_info> &circuit_infos, const circuit_map &cmap)
 {
   for(int y=0; y<cmap.sy; y++) {
     tinfo.tick(y, cmap.sy);
@@ -1023,7 +1022,7 @@ pbm *metal = NULL;
 pbm *poly = NULL;
 pbm *vias = NULL;
 pbm *caps = NULL;
-list<metal_link_info> metal_links;
+std::vector<metal_link_info> metal_links;
 
 const char *map_name = NULL;
 const char *list_name = NULL;
@@ -1032,18 +1031,18 @@ int sy;
 
 void nmos_poly_single_metal()
 {
-  vector<circuit_info> circuit_infos;
-  vector<via_info> via_infos;
+  std::vector<circuit_info> circuit_infos;
+  std::vector<via_info> via_infos;
   via_map via_maps;
-  vector<net_info> net_infos;
-  vector<trans_info> trans_infos;
+  std::vector<net_info> net_infos;
+  std::vector<trans_info> trans_infos;
 
   circuit_map cmap(map_name, 3, sx, sy, true);
 
   time_info tinfo;
   tinfo.start("build circuits active/poly");
   build_circuits(tinfo, boost::bind(color_active_poly, _1, _2, active, poly, buried, caps), circuit_infos, &cmap, 0);
-  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+  for(std::vector<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
     add_virtual_circuit(circuit_infos, *i, sy, true);
   circuit_stats(circuit_infos);
   tinfo.start("build circuits metal");
@@ -1059,7 +1058,7 @@ void nmos_poly_single_metal()
   circuit_stats(circuit_infos);
   tinfo.start("mapping vias");
   map_vias(tinfo, via_infos, via_maps, circuit_infos, vias, cmap);
-  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+  for(std::vector<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
     add_virtual_vias(via_infos, via_maps, *i, cmap);
   fprintf(stderr, "  -> %d vias mapped\n", int(via_infos.size()));
   tinfo.start("building nets");
@@ -1074,17 +1073,17 @@ void nmos_poly_single_metal()
 
 void nmos_metal_gate()
 {
-  vector<circuit_info> circuit_infos;
-  vector<via_info> via_infos;
+  std::vector<circuit_info> circuit_infos;
+  std::vector<via_info> via_infos;
   via_map via_maps;
-  vector<net_info> net_infos;
-  vector<trans_info> trans_infos;
+  std::vector<net_info> net_infos;
+  std::vector<trans_info> trans_infos;
 
   circuit_map cmap(map_name, 2, sx, sy, true);
   time_info tinfo;
   tinfo.start("build circuits active/gates");
   build_circuits(tinfo, boost::bind(color_active_gates, _1, _2, active, gates, caps), circuit_infos, &cmap, 0);
-  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+  for(std::vector<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
     add_virtual_circuit(circuit_infos, *i, sy, false);
   circuit_stats(circuit_infos);
   tinfo.start("build circuits metal");
@@ -1094,7 +1093,7 @@ void nmos_metal_gate()
   build_neighbors(tinfo, circuit_infos, cmap);
   tinfo.start("mapping vias");
   map_vias(tinfo, via_infos, via_maps, circuit_infos, vias, cmap);
-  for(list<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
+  for(std::vector<metal_link_info>::iterator i = metal_links.begin(); i != metal_links.end(); i++)
     add_virtual_vias(via_infos, via_maps, *i, cmap);
   fprintf(stderr, "  -> %d vias mapped\n", int(via_infos.size()));
   tinfo.start("building nets");

@@ -19,8 +19,6 @@
 #include <map>
 #include <list>
 
-using namespace std;
-
 struct point {
   int x, y;
 
@@ -60,7 +58,7 @@ class net;
 
 class lt {
 public:
-  string name;
+  std::string name;
 
   virtual ~lt();
 };
@@ -68,12 +66,12 @@ public:
 class node : public lt {
 public:
   point pos;
-  vector<net *> nets;
-  vector<int> netids;
+  std::vector<net *> nets;
+  std::vector<int> netids;
 
   node(reader &rd);
   virtual ~node();
-  void resolve_nets(const vector<net *> &nets);
+  void resolve_nets(const std::vector<net *> &nets);
 };
 
 class mosfet : public node {
@@ -120,9 +118,9 @@ public:
     int p1, p2;
   };
 
-  vector<point> pt;
-  vector<line> lines;
-  vector<int> dots;
+  std::vector<point> pt;
+  std::vector<line> lines;
+  std::vector<int> dots;
 
   int id;
   int powernet;
@@ -133,10 +131,10 @@ public:
   bool is_named() const;
 };
 
-vector<node *> nodes;
-vector<net *> nets;
-map<string, net *> netidx;
-map<net *, list<mosfet *> > net_to_trans_term;
+std::vector<node *> nodes;
+std::vector<net *> nets;
+std::map<std::string, net *> netidx;
+std::map<net *, std::vector<mosfet *> > net_to_trans_term;
 
 lt::~lt()
 {
@@ -152,7 +150,7 @@ node::~node()
 {
 }
 
-void node::resolve_nets(const vector<net *> &_nets)
+void node::resolve_nets(const std::vector<net *> &_nets)
 {
   nets.resize(netids.size());
   for(unsigned int i=0; i != nets.size(); i++)
@@ -392,7 +390,7 @@ void state_load(const char *fname)
   }
 }
 
-string escape(string n)
+std::string escape(std::string n)
 {
   for(unsigned int i=0; i != n.size(); i++) {
     char c = n[i];
@@ -415,14 +413,14 @@ struct mapper_term {
 };
 
 struct mapper {
-  vector<mapper_term> terms;
-  vector<net *> nets;
-  set<int> outputs;
+  std::vector<mapper_term> terms;
+  std::vector<net *> nets;
+  std::set<int> outputs;
 
   int count_t, count_d, count_v;
 };
 
-string netvar_name(int id)
+std::string netvar_name(int id)
 {
   char buf[16];
   if(id == mapper_term::P_0)
@@ -451,15 +449,15 @@ void make_counts(mapper &m)
   }
 }
 
-void build_net_list(set<net *> &nets, net *root)
+void build_net_list(std::set<net *> &nets, net *root)
 {
-  list<net *> stack;
+  std::vector<net *> stack;
   stack.push_back(root);
   while(!stack.empty()) {
     net *n = stack.front();
-    stack.pop_front();
-    list<mosfet *> &trans = net_to_trans_term[n];
-    for(list<mosfet *>::iterator i = trans.begin(); i != trans.end(); i++) {
+    stack.erase(stack.begin());
+    std::vector<mosfet *> &trans = net_to_trans_term[n];
+    for(std::vector<mosfet *>::iterator i = trans.begin(); i != trans.end(); i++) {
       mosfet *t = *i;
       for(int term=0; term<3; term++) {
 	net *n1 = t->nets[term];
@@ -472,19 +470,19 @@ void build_net_list(set<net *> &nets, net *root)
   }
 }
 
-void build_net_groups(list<set<net *>> &netgroups, const set<net *> &nets)
+void build_net_groups(std::vector<std::set<net *>> &netgroups, const std::set<net *> &nets)
 {
-  set<net *> done;
+  std::set<net *> done;
   for(auto i : nets) {
     if(done.find(i) == done.end() && !i->powernet) {
-      netgroups.push_back(set<net *>());
+      netgroups.push_back(std::set<net *>());
       auto &g = netgroups.back();
-      list<net *> stack;
+      std::vector<net *> stack;
       stack.push_back(i);
       g.insert(i);
       while(!stack.empty()) {
 	net *n = stack.front();
-	stack.pop_front();
+	stack.erase(stack.begin());
 	done.insert(n);
 	for(const auto t : net_to_trans_term[n]) {
 	  for(int term=0; term<3; term++)
@@ -501,10 +499,10 @@ void build_net_groups(list<set<net *>> &netgroups, const set<net *> &nets)
   }
 }
 
-void build_mapper(mapper &m, const set<net *> &g)
+void build_mapper(mapper &m, const std::set<net *> &g)
 {
-  set<const mosfet *> done;
-  map<net *, int> ids;
+  std::set<const mosfet *> done;
+  std::map<net *, int> ids;
 
   for(auto i : g) {
     for(const auto t : net_to_trans_term[i])
@@ -536,9 +534,9 @@ void build_mapper(mapper &m, const set<net *> &g)
   make_counts(m);
 }
 
-string mapper_to_eq(const mapper &m)
+std::string mapper_to_eq(const mapper &m)
 {
-  string r;
+  std::string r;
   for(auto i : m.terms) {
     r += i.depletion ? 'd' : 't';
     r += netvar_name(i.netvar[T1]);
@@ -552,7 +550,7 @@ string mapper_to_eq(const mapper &m)
   return r;
 }
 
-string vname(const mapper &m, const vector<int> &vars, int id)
+std::string vname(const mapper &m, const std::vector<int> &vars, int id)
 {
   net *n = m.nets[vars[id]];
   if(n->is_named())
@@ -561,21 +559,21 @@ string vname(const mapper &m, const vector<int> &vars, int id)
     return 'n' + n->name;
 }
 
-void handler_d1aa_tab0__a(const mapper &m, const vector<int> &vars)
+void handler_d1aa_tab0__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !%s;\n",
 	 vname(m, vars, 0).c_str(),
 	 vname(m, vars, 1).c_str());
 }
 
-void handler_t0ba_ta11__a(const mapper &m, const vector<int> &vars)
+void handler_t0ba_ta11__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !%s;\n",
 	 vname(m, vars, 0).c_str(),
 	 vname(m, vars, 1).c_str());
 }
 
-void handler_tab0_tac0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -583,7 +581,7 @@ void handler_tab0_tac0_daa1__a(const mapper &m, const vector<int> &vars)
 	 vname(m, vars, 2).c_str());
 }
 
-void handler_tab0_tac0_tad0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -592,7 +590,7 @@ void handler_tab0_tac0_tad0_daa1__a(const mapper &m, const vector<int> &vars)
 	 vname(m, vars, 3).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -602,7 +600,7 @@ void handler_tab0_tac0_tad0_tae0_daa1__a(const mapper &m, const vector<int> &var
 	 vname(m, vars, 4).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -613,7 +611,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_daa1__a(const mapper &m, const vector<int>
 	 vname(m, vars, 5).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -625,7 +623,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_daa1__a(const mapper &m, const vector
 	 vname(m, vars, 6).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -638,7 +636,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_daa1__a(const mapper &m, const v
 	 vname(m, vars, 7).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -652,7 +650,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_daa1__a(const mapper &m, co
 	 vname(m, vars, 8).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -668,7 +666,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_daa1__a(const mapper &
 }
 
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -684,7 +682,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_daa1__a(const map
 	 vname(m, vars, 10).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -701,7 +699,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_daa1__a(cons
 	 vname(m, vars, 11).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -719,7 +717,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_daa1__a
 	 vname(m, vars, 12).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -738,7 +736,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_da
 	 vname(m, vars, 13).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -758,7 +756,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_ta
 	 vname(m, vars, 14).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -779,7 +777,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_ta
 	 vname(m, vars, 15).c_str());
 }
 
-void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_taq0_daa1__a(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_tao0_tap0_taq0_daa1__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -801,7 +799,7 @@ void handler_tab0_tac0_tad0_tae0_taf0_tag0_tah0_tai0_taj0_tak0_tal0_tam0_tan0_ta
 	 vname(m, vars, 16).c_str());
 }
 
-void handler_tab0_daa1_tadc_tcfe_tehg__acf(const mapper &m, const vector<int> &vars)
+void handler_tab0_daa1_tadc_tcfe_tehg__acf(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !%s;\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
   printf("  set_t(%s, %s || %s, (%s && %s) || (%s && %s))\n", vname(m, vars, 2).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 0).c_str(), vname(m, vars, 5).c_str(), vname(m, vars, 2).c_str());
@@ -809,22 +807,22 @@ void handler_tab0_daa1_tadc_tcfe_tehg__acf(const mapper &m, const vector<int> &v
   printf("  set_t(%s, %s, %s)\n", vname(m, vars, 6).c_str(), vname(m, vars, 7).c_str(), vname(m, vars, 4).c_str());
 }
 
-void handler_ta1b__a(const mapper &m, const vector<int> &vars)
+void handler_ta1b__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = %s;\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
 }
 
-void handler_t0ba_tadc__a(const mapper &m, const vector<int> &vars)
+void handler_t0ba_tadc__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  set_t(%s, %s || %s, %s && !%s);\n", vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str(), vname(m, vars, 3).c_str(), vname(m, vars, 2).c_str(), vname(m, vars, 1).c_str());
 }
 
-void handler_t0ba_daa1_ta1c__ac(const mapper &m, const vector<int> &vars)
+void handler_t0ba_daa1_ta1c__ac(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = %s = !%s;\n", vname(m, vars, 2).c_str(), vname(m, vars, 0).c_str(), vname(m, vars, 1).c_str());
 }
 
-void handler_tab0_tac0_daa1_ta1d__ad(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_daa1_ta1d__ad(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = %s = !(%s || %s);\n",
 	 vname(m, vars, 3).c_str(),
@@ -833,7 +831,7 @@ void handler_tab0_tac0_daa1_ta1d__ad(const mapper &m, const vector<int> &vars)
 	 vname(m, vars, 2).c_str());
 }
 
-void handler_tab0_tac0_daa1_taed__ad(const mapper &m, const vector<int> &vars)
+void handler_tab0_tac0_daa1_taed__ad(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !(%s || %s);\n",
 	 vname(m, vars, 0).c_str(),
@@ -846,7 +844,7 @@ void handler_tab0_tac0_daa1_taed__ad(const mapper &m, const vector<int> &vars)
 
 }
 
-template<int n> void handler_tab1_tac0__a(const mapper &m, const vector<int> &vars)
+template<int n> void handler_tab1_tac0__a(const mapper &m, const std::vector<int> &vars)
 {
   printf("  set_01(%s, %s",
 	 vname(m, vars, 0).c_str(),
@@ -858,21 +856,22 @@ template<int n> void handler_tab1_tac0__a(const mapper &m, const vector<int> &va
 	 vname(m, vars, 1).c_str());	 
 }
 
-void handler_t0ba_daa1_tadc_tcfe__ac(const mapper &m, const vector<int> &vars)
+void handler_t0ba_daa1_tadc_tcfe__ac(const mapper &m, const std::vector<int> &vars)
 {
   printf("  %s = !%s\n",
 	 vname(m, vars, 0).c_str(),
 	 vname(m, vars, 1).c_str());
-  printf("  set_01(%s, %s, %s)\n",
+  //  printf("  set_01(%s, %s, %s)\n",
+}
 	 
 struct handler {
   mapper m;
-  void (*f)(const mapper &m, const vector<int> &vars);
+  void (*f)(const mapper &m, const std::vector<int> &vars);
 
-  handler(mapper _m, void (*_f)(const mapper &m, const vector<int> &vars)) { m = _m; f = _f; }
+  handler(mapper _m, void (*_f)(const mapper &m, const std::vector<int> &vars)) { m = _m; f = _f; }
 };
 
-list<handler> handlers;
+std::vector<handler> handlers;
 
 int get_netvar(const char *&eq)
 {
@@ -919,7 +918,7 @@ void eq_parse(mapper &m, const char *eq)
   make_counts(m);
 }
 
-void reg(const char *eq, void (*f)(const mapper &m, const vector<int> &vars))
+void reg(const char *eq, void (*f)(const mapper &m, const std::vector<int> &vars))
 {
   mapper m;
   eq_parse(m, eq);
@@ -975,7 +974,7 @@ void register_handlers()
   reg("t0ba daa1 tadc tcfe +ac", handler_t0ba_daa1_tadc_tcfe__ac);
 }
 
-bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
+bool unify(const mapper &m1, const mapper &m2, std::vector<int> &vars)
 {
   if(m1.count_t != m2.count_t || m1.count_d != m2.count_d || m1.count_v != m2.count_v || m1.outputs.size() != m2.outputs.size())
     return false;
@@ -988,17 +987,17 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 
   int nterm = m1.count_t + m1.count_d;
 
-  list<int> match_order;
-  set<int> match_tagged;
+  std::vector<int> match_order;
+  std::set<int> match_tagged;
 
-  list<int> match_unordered;
+  std::vector<int> match_unordered;
   for(int i=0; i != nterm; i++)
       match_unordered.push_back(i);
 
   while(!match_unordered.empty()) {
     int best_free_count = 0;
-    list<int>::iterator best_free;
-    for(list<int>::iterator i = match_unordered.begin(); i != match_unordered.end();) {
+    std::vector<int>::iterator best_free;
+    for(std::vector<int>::iterator i = match_unordered.begin(); i != match_unordered.end();) {
       const mapper_term &m = m1.terms[*i];
       int count = 0;
       for(unsigned int j=0; j != 3; j++)
@@ -1006,7 +1005,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 	  count++;
       if(!count) {
 	match_order.push_back(*i);
-	list<int>::iterator ii = i;
+	std::vector<int>::iterator ii = i;
 	i++;
 	match_unordered.erase(ii);
       } else {
@@ -1030,17 +1029,17 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
   }
 
   int slot = 0;
-  vector<int> cursors;
-  vector<int> alts;
-  vector<bool> fixed;
+  std::vector<int> cursors;
+  std::vector<int> alts;
+  std::vector<bool> fixed;
   cursors.resize(nterm);
   alts.resize(nterm);
-  list<int>::iterator cur_match = match_order.begin();
-  map<int, int> cur_nodes;
-  map<int, int> cur_nets;
-  map<int, int> net_slots;
-  set<int> used_nodes;
-  set<int> used_nets;
+  std::vector<int>::iterator cur_match = match_order.begin();
+  std::map<int, int> cur_nodes;
+  std::map<int, int> cur_nets;
+  std::map<int, int> net_slots;
+  std::set<int> used_nodes;
+  std::set<int> used_nets;
   goto changed_slot;
 
  changed_slot:
@@ -1080,7 +1079,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
     }
     const mapper_term &me = m1.terms[*cur_match];
     int n = cursors[slot];
-    vector<int> params;
+    std::vector<int> params;
     params.resize(3);
     switch(alts[slot]) {
     case 0:
@@ -1095,14 +1094,14 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
       break;
     }
 
-    map<int, int> temp_nets;
-    set<int> temp_used_nets;
+    std::map<int, int> temp_nets;
+    std::set<int> temp_used_nets;
     for(unsigned int i=0; i != 3; i++) {
       if(params[i] >= 0 && me.netvar[i] >= 0) {
 	if(0) {
 	  fprintf(stderr, "  check param %d, m1[%d] vs. m2[%d]\n", i, me.netvar[i], params[i]);
 	}
-	map<int, int>::const_iterator ni = cur_nets.find(me.netvar[i]);	
+	std::map<int, int>::const_iterator ni = cur_nets.find(me.netvar[i]);	
 	if(ni == cur_nets.end()) {
 	  ni = temp_nets.find(me.netvar[i]);
 	  if(ni == temp_nets.end()) {
@@ -1129,7 +1128,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 	fprintf(stderr, "  param %d wired ok (%d)\n", i, params[i]);
     }
 
-    for(map<int, int>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
+    for(std::map<int, int>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
       cur_nets[i->first] = i->second;
       used_nets.insert(i->second);
       net_slots[i->first] = slot;
@@ -1176,7 +1175,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
     const mapper_term &me = m1.terms[*cur_match];
     for(unsigned int i=0; i != 3; i++)
       if(me.netvar[i] >= 0) {
-	map<int, int>::iterator j = net_slots.find(me.netvar[i]);
+	std::map<int, int>::iterator j = net_slots.find(me.netvar[i]);
 	if(j != net_slots.end() && j->second == slot) {
 	  assert(used_nets.find(cur_nets[me.netvar[i]]) != used_nets.end());
 	  used_nets.erase(used_nets.find(cur_nets[me.netvar[i]]));;
@@ -1203,7 +1202,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 
  match:
   vars.resize(m1.count_v);
-  for(map<int, int>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++)
+  for(std::map<int, int>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++)
     vars[i->first] = i->second;
 
   return true;
@@ -1211,7 +1210,7 @@ bool unify(const mapper &m1, const mapper &m2, vector<int> &vars)
 
 bool handle(const mapper &m)
 {
-  vector<int> vars;
+  std::vector<int> vars;
   vars.resize(m.count_v);
 
   for(auto i : handlers)
@@ -1227,8 +1226,8 @@ bool handle(const mapper &m)
 void logx(const char *name)
 {
   net *root = netidx[name];
-  set<net *> nets;
-  list<set<net *>> netgroups;
+  std::set<net *> nets;
+  std::vector<std::set<net *>> netgroups;
   build_net_list(nets, root);
   build_net_groups(netgroups, nets);
 
@@ -1236,7 +1235,7 @@ void logx(const char *name)
     mapper m;
     build_mapper(m, j);
     if(!handle(m)) {
-      string eq = mapper_to_eq(m);
+      std::string eq = mapper_to_eq(m);
       printf("group: %s  %s\n", eq.c_str(), escape(eq).c_str());
       for(unsigned int i=0; i != m.nets.size(); i++)
 	printf("  %s %s\n", netvar_name(i).c_str(), m.nets[i]->name.c_str());

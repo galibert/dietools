@@ -21,8 +21,6 @@
 #include "globals.h"
 #include <reader.h>
 
-using namespace std;
-
 int main(int argc, char **argv)
 {
   reader rd(argv[1]);

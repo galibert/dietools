@@ -54,7 +54,7 @@ struct cglyph {
 static FT_Library flib;
 static FT_Face face;
 static double cached_size, cached_rot;
-static map<int, cglyph> cached_glyphs;
+static std::map<int, cglyph> cached_glyphs;
 
 
 void freetype_init()
@@ -78,7 +78,7 @@ void freetype_init()
 static void freetype_render(const char *str, double size, double rot, int &width, int &height, unsigned char *&image)
 {
   if(size != cached_size || rot != cached_rot) {
-    for(map<int, cglyph>::iterator i = cached_glyphs.begin(); i != cached_glyphs.end(); i++)
+    for(auto i = cached_glyphs.begin(); i != cached_glyphs.end(); i++)
       delete[] i->second.image;
     cached_glyphs.clear();
   }
@@ -613,9 +613,9 @@ class node : public lt {
 public:
   enum { NORMAL, GND, VCC };
   point pos;
-  vector<net *> nets;
-  vector<int> nettypes;
-  string oname;
+  std::vector<net *> nets;
+  std::vector<int> nettypes;
+  std::string oname;
 
   virtual ~node();
   virtual point get_pos(int pin) const = 0;
@@ -623,13 +623,13 @@ public:
   virtual void to_svg(FILE *fd) const = 0;
   virtual void to_txt(FILE *fd) const = 0;
   virtual void draw(patch &p, int ox, int oy) const = 0;
-  void build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &nets);
+  void build_power_nodes_and_nets(std::vector<node *> &nodes, std::vector<net *> &nets);
   void add_net(int pin, net *n);
   int get_nettype(int nid) const;
   point net_get_center(int pin) const;
   void move(int x, int y);
   virtual void set_orientation(char orient, net *source) = 0;
-  virtual void set_subtype(string subtype);
+  virtual void set_subtype(std::string subtype);
 
   static int l_pos(lua_State *L);
   static int l_move(lua_State *L);
@@ -656,7 +656,7 @@ public:
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
-  virtual void set_subtype(string subtype);
+  virtual void set_subtype(std::string subtype);
   static mosfet *checkparam(lua_State *L, int idx);
   static mosfet *getparam(lua_State *L, int idx);
   virtual const char *type_name() const;
@@ -717,13 +717,13 @@ class pad : public node {
 public:
   static const char *type_name_s;
 
-  string name;
+  std::string name;
   int orientation;
 
   int name_width, name_height;
   unsigned char *name_image;
 
-  pad(string name, point pos, int orientation);
+  pad(std::string name, point pos, int orientation);
   virtual ~pad();
   point get_pos(int pin) const;
   void refine_position();
@@ -750,10 +750,10 @@ public:
   static const char *type_name_s;
 
   int id, nid;
-  vector<ref> nodes;
-  vector<point> routes;
-  list<pair<int, int> > draw_order;
-  string oname;
+  std::vector<ref> nodes;
+  std::vector<point> routes;
+  std::vector<std::pair<int, int>> draw_order;
+  std::string oname;
 
   net(int id, int nid, bool is_vcc);
   virtual ~net();
@@ -762,7 +762,7 @@ public:
 
   point get_center() const;
   point get_closest(const node *nref, point p) const;
-  void add_link_keys(int nid, vector<uint64_t> &link_keys) const;
+  void add_link_keys(int nid, std::vector<uint64_t> &link_keys) const;
   void handle_key(uint64_t k);
   void to_svg(FILE *fd) const;
   void to_txt(FILE *fd) const;
@@ -873,7 +873,7 @@ FILE *svg_open(const char *fname, int width, int height)
   return fd;
 }
 
-void svg_text(FILE *fd, point p, string text, int px, int size)
+void svg_text(FILE *fd, point p, std::string text, int px, int size)
 {
   static const char *anchor[3] = { "start", "middle", "end" };
   fprintf(fd, "  <text xml:space=\"preserve\" style=\"font-size:%dpx;text-anchor:%s;fill:#000000;stroke:none\" x=\"%d\" y=\"%d\">\n", size*10, anchor[px+1], p.x*10, p.y*10);
@@ -891,7 +891,7 @@ node::~node()
 {
 }
 
-void node::set_subtype(string subtype)
+void node::set_subtype(std::string subtype)
 {
   abort();
 }
@@ -911,7 +911,7 @@ int node::get_nettype(int nid) const
   return nid == state->vcc ? VCC : nid == state->gnd ? GND : NORMAL;
 }
 
-void node::build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &_nets)
+void node::build_power_nodes_and_nets(std::vector<node *> &nodes, std::vector<net *> &_nets)
 {
   net *vcc_net = NULL, *gnd_net = NULL;
   for(unsigned int i=0; i != nets.size(); i++)
@@ -1197,7 +1197,7 @@ int pad::luaopen(lua_State *L)
   return 1;
 }
 
-pad::pad(string _name, point _pos, int _orientation)
+pad::pad(std::string _name, point _pos, int _orientation)
 {
   pos = _pos;
   name = _name;
@@ -1361,7 +1361,7 @@ void mosfet::set_orientation(char orient, net *source)
   }
 }
 
-void mosfet::set_subtype(string subtype)
+void mosfet::set_subtype(std::string subtype)
 {
   if(subtype == "t")
     ttype = State::T_NMOS;
@@ -2011,17 +2011,17 @@ point net::get_closest(const node *nref, point ref) const
   return best_point;
 }
 
-void net::add_link_keys(int nid, vector<uint64_t> &link_keys) const
+void net::add_link_keys(int nid, std::vector<uint64_t> &link_keys) const
 {
   int np = nodes.size() + routes.size();
-  vector<point> pt;
+  std::vector<point> pt;
   pt.resize(np);
   for(unsigned int i = 0; i != nodes.size(); i++)
     pt[i] = nodes[i].n->get_pos(nodes[i].pin);
   for(unsigned int i = 0; i != routes.size(); i++)
     pt[i+nodes.size()] = routes[i];
 
-  vector<bool> in_tree;
+  std::vector<bool> in_tree;
   in_tree.resize(np);
   for(int i=0; i != np; i++)
     in_tree[i] = i == 0;
@@ -2047,7 +2047,7 @@ void net::add_link_keys(int nid, vector<uint64_t> &link_keys) const
 
 void net::handle_key(uint64_t k)
 {
-  draw_order.push_back(pair<int, int>((k >> 32) & 0xffff, (k >> 16) & 0xffff));
+  draw_order.push_back(std::pair<int, int>((k >> 32) & 0xffff, (k >> 16) & 0xffff));
 }
 
 void net::to_svg(FILE *fd) const
@@ -2060,8 +2060,8 @@ void net::to_svg(FILE *fd) const
     return;
 
   int np = nodes.size() + routes.size();
-  vector<point> pt;
-  map<int, int> use_count;
+  std::vector<point> pt;
+  std::map<int, int> use_count;
   pt.resize(np);
 
   for(unsigned int i = 0; i != nodes.size(); i++) {
@@ -2072,14 +2072,14 @@ void net::to_svg(FILE *fd) const
     pt[i+nodes.size()] = routes[i];
 
   fprintf(fd, "  <g id=\"%s\"><desc>%s</desc>\n", state->ninfo.net_name(id).c_str(), oname.c_str());
-  for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
+  for(auto i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
     fprintf(fd, "    <path d=\"M %d %d %d %d\" />\n", pt[i->first].x*10, pt[i->first].y*10, pt[i->second].x*10, pt[i->second].y*10);
     use_count[pt[i->first].y*65536 + pt[i->first].x]++;
     use_count[pt[i->second].y*65536 + pt[i->second].x]++;
   }
-  for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
+  for(auto i = use_count.begin(); i != use_count.end(); i++)
     if(i->second > 2)
       for(int j=0; j != np; j++)
 	if(pt[j].y*65536+pt[j].x == i->first)
@@ -2090,8 +2090,8 @@ void net::to_svg(FILE *fd) const
 void net::to_txt(FILE *fd) const
 {
   int np = nodes.size() + routes.size();
-  vector<point> pt;
-  map<int, int> use_count;
+  std::vector<point> pt;
+  std::map<int, int> use_count;
   pt.resize(np);
 
   for(unsigned int i = 0; i != nodes.size(); i++) {
@@ -2106,7 +2106,7 @@ void net::to_txt(FILE *fd) const
     fprintf(fd, " %d %d", pt[i].x, sy1-pt[i].y);
 
   int nd = 0;
-  for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
+  for(std::vector<std::pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
     use_count[pt[i->first].y*65536 + pt[i->first].x]++;
@@ -2114,19 +2114,19 @@ void net::to_txt(FILE *fd) const
     nd++;
   }
   int uc = 0;
-  for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
+  for(std::map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
     if(i->second > 2)
       uc++;
 
   fprintf(fd, " %d", nd);
-  for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
+  for(std::vector<std::pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
     fprintf(fd, " %d %d", i->first, i->second);
   }
 
   fprintf(fd, " %d", uc);
-  for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
+  for(std::map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
     if(i->second > 2) {
       for(int j=0; j != np; j++)
 	if(pt[j].y*65536+pt[j].x == i->first) {
@@ -2143,8 +2143,8 @@ void net::draw(patch &p, int ox, int oy) const
     return;
 
   int np = nodes.size() + routes.size();
-  vector<point> pt;
-  map<int, int> use_count;
+  std::vector<point> pt;
+  std::map<int, int> use_count;
   pt.resize(np);
 
   for(unsigned int i = 0; i != nodes.size(); i++) {
@@ -2154,14 +2154,14 @@ void net::draw(patch &p, int ox, int oy) const
   for(unsigned int i = 0; i != routes.size(); i++)
     pt[i+nodes.size()] = routes[i];
 
-  for(list<pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
+  for(std::vector<std::pair<int, int> >::const_iterator i = draw_order.begin(); i != draw_order.end(); i++) {
     if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
       continue;
     p.line(ox, oy, pt[i->first].x*10, pt[i->first].y*10, pt[i->second].x*10, pt[i->second].y*10);
     use_count[pt[i->first].y*65536 + pt[i->first].x]++;
     use_count[pt[i->second].y*65536 + pt[i->second].x]++;
   }
-  for(map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
+  for(std::map<int, int>::const_iterator i = use_count.begin(); i != use_count.end(); i++)
     if(i->second > 2) {
       int bx = (i->first & 65535)*10;
       int by = (i->first >> 16)*10;
@@ -2175,7 +2175,7 @@ void net::draw(patch &p, int ox, int oy) const
     }
 }
 
-void draw(const char *format, const vector<node *> &nodes, const vector<net *> &nets)
+void draw(const char *format, const std::vector<node *> &nodes, const std::vector<net *> &nets)
 {
   unsigned int limx = int(state->info.sx / ratio)*10/PATCH_SX;
   unsigned int limy = int(state->info.sy / ratio)*10/PATCH_SY;
@@ -2244,7 +2244,7 @@ void draw(const char *format, const vector<node *> &nodes, const vector<net *> &
   delete[] levels;
 }
 
-void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, const vector<net *> &nets)
+void save_txt(const char *fname, int sx, int sy, const std::vector<node *> &nodes, const std::vector<net *> &nets)
 {
   char msg[4096];
   sprintf(msg, "Error opening %s for writing", fname);
@@ -2266,9 +2266,9 @@ void save_txt(const char *fname, int sx, int sy, const vector<node *> &nodes, co
   fclose(fd);
 }
 
-void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
+void build_mosfets(std::vector<node *> &nodes, std::map<int, std::vector<ref> > &nodemap)
 {
-  vector<uint64_t> transinf;
+  std::vector<uint64_t> transinf;
   for(unsigned int i=0; i != state->info.trans.size(); i++) {
     const tinfo &ti = state->info.trans[i];
     uint64_t id;
@@ -2298,9 +2298,9 @@ void build_mosfets(vector<node *> &nodes, map<int, list<ref> > &nodemap)
   }
 }
 
-void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
+void build_capacitors(std::vector<node *> &nodes, std::map<int, std::vector<ref> > &nodemap)
 {
-  vector<uint64_t> capsinf;
+  std::vector<uint64_t> capsinf;
   for(unsigned int i=0; i != state->info.circs.size(); i++) {
     const cinfo &ci = state->info.circs[i];
     if(ci.type == 'c') {
@@ -2331,7 +2331,7 @@ void build_capacitors(vector<node *> &nodes, map<int, list<ref> > &nodemap)
   }
 }
 
-void build_pads(const char *fname, vector<node *> &nodes, map<int, list<ref> > &nodemap)
+void build_pads(const char *fname, std::vector<node *> &nodes, std::map<int, std::vector<ref> > &nodemap)
 {
   pad_info pp(fname, state->ninfo);
   for(unsigned int i=0; i != pp.pads.size(); i++) {
@@ -2353,32 +2353,32 @@ void build_pads(const char *fname, vector<node *> &nodes, map<int, list<ref> > &
   }
 }
 
-void build_nets(vector<net *> &nets, const map<int, list<ref> > &nodemap)
+void build_nets(std::vector<net *> &nets, const std::map<int, std::vector<ref> > &nodemap)
 {
   for(unsigned int i=0; i != state->info.nets.size(); i++) {
     net *n = new net(i, nets.size(), false);
     nets.push_back(n);
     if(int(i) == state->vcc || int(i) == state->gnd)
       continue;
-    map<int, list<ref> >::const_iterator k = nodemap.find(i);
+    std::map<int, std::vector<ref> >::const_iterator k = nodemap.find(i);
     if(k != nodemap.end())
-      for(list<ref>::const_iterator j = k->second.begin(); j != k->second.end(); j++) {
+      for(std::vector<ref>::const_iterator j = k->second.begin(); j != k->second.end(); j++) {
 	n->add_node(*j);
 	j->n->add_net(j->pin, n);
       }
   }
 }
 
-void build_power_nodes_and_nets(vector<node *> &nodes, vector<net *> &nets)
+void build_power_nodes_and_nets(std::vector<node *> &nodes, std::vector<net *> &nets)
 {
   int nn = nodes.size();
   for(int i=0; i != nn; i++)
     nodes[i]->build_power_nodes_and_nets(nodes, nets);
 }
 
-void build_net_links(vector<net *> &nets)
+void build_net_links(std::vector<net *> &nets)
 {
-  vector<uint64_t> link_keys;
+  std::vector<uint64_t> link_keys;
   for(unsigned int i=0; i != nets.size(); i++)
     nets[i]->add_link_keys(i, link_keys);
   sort(link_keys.begin(), link_keys.end());
@@ -2388,8 +2388,8 @@ void build_net_links(vector<net *> &nets)
   }
 }
 
-vector<node *> nodes;
-vector<net *> nets;
+std::vector<node *> nodes;
+std::vector<net *> nets;
 
 int l_nodes_rect(lua_State *L)
 {
@@ -2447,7 +2447,7 @@ int l_nodes_trace(lua_State *L)
     base = net::getparam(L, 1);
 
   int depth = lua_tonumber(L, 2);
-  set<net *> edges;
+  std::set<net *> edges;
   for(int i=3; i<=lua_gettop(L); i++) {
     luaL_argcheck(L, lua_isstring(L, i) || net::checkparam(L, i), i, "edge net/net name expected");
     net *n;
@@ -2458,15 +2458,15 @@ int l_nodes_trace(lua_State *L)
     edges.insert(n);
   }
 
-  list<net *> stack;
-  set<net *> found;
-  set<node *> fnodes;
+  std::vector<net *> stack;
+  std::set<net *> found;
+  std::set<node *> fnodes;
   stack.push_back(base);
   found.insert(base);
   for(int i=0; i<depth; i++) {
-    list<net *> ostack = stack;
+    std::vector<net *> ostack = stack;
     stack.clear();
-    for(list<net *>::const_iterator j = ostack.begin(); j != ostack.end(); j++) {
+    for(std::vector<net *>::const_iterator j = ostack.begin(); j != ostack.end(); j++) {
       net *n = *j;
 
       for(unsigned int k=0; k != n->nodes.size(); k++) {
@@ -2485,7 +2485,7 @@ int l_nodes_trace(lua_State *L)
 
   lua_newtable(L);
   int id = 1;
-  for(set<node *>::const_iterator i = fnodes.begin(); i != fnodes.end(); i++) {
+  for(std::set<node *>::const_iterator i = fnodes.begin(); i != fnodes.end(); i++) {
     (*i)->wrap(L);
     lua_rawseti(L, -2, id++);
   }
@@ -2496,13 +2496,13 @@ int l_make_match(lua_State *L)
 {
   luaL_argcheck(L, lua_istable(L, 1), 1, "node array expected");
   luaL_argcheck(L, lua_gettop(L) < 2 || lua_istable(L, 2) || lua_isnil(L, 2), 2, "presets expected");
-  set<node *> all_nodes;
-  set<net *> all_nets;
-  set<node *> preset_nodes;
-  set<net *> preset_nets;
-  map<node *, string> node_names;
-  map<net *, string> net_names;
-  set<string> all_names;
+  std::set<node *> all_nodes;
+  std::set<net *> all_nets;
+  std::set<node *> preset_nodes;
+  std::set<net *> preset_nets;
+  std::map<node *, std::string> node_names;
+  std::map<net *, std::string> net_names;
+  std::set<std::string> all_names;
 
   lua_pushvalue(L, 1);
   lua_pushnil(L);
@@ -2520,7 +2520,7 @@ int l_make_match(lua_State *L)
     while(lua_next(L, -2) != 0) {
       lt *l = lt::getparam_any(L, -1);
       lua_pushvalue(L, -2);
-      string name = lua_tostring(L, -1);
+      std::string name = lua_tostring(L, -1);
       all_names.insert(name);
       if(dynamic_cast<node *>(l)) {
 	all_nodes.insert(static_cast<node *>(l));
@@ -2535,14 +2535,14 @@ int l_make_match(lua_State *L)
     lua_pop(L, 1);
   }
 
-  for(set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++) {
+  for(std::set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++) {
     node *n = *i;
     for(unsigned int j=0; j != n->nets.size(); j++)
       all_nets.insert(n->nets[j]);
   }
 
   int id = 0;
-  for(set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++) {
+  for(std::set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++) {
     if(node_names.find(*i) != node_names.end())
       continue;
     char buf[32];
@@ -2559,7 +2559,7 @@ int l_make_match(lua_State *L)
   }
 
   id = 0;
-  for(set<net *>::const_iterator i = all_nets.begin(); i != all_nets.end(); i++) {
+  for(std::set<net *>::const_iterator i = all_nets.begin(); i != all_nets.end(); i++) {
     if(net_names.find(*i) != net_names.end())
       continue;
     char buf[32];
@@ -2575,8 +2575,8 @@ int l_make_match(lua_State *L)
     net_names[*i] = buf;
   }
 
-  string res;
-  for(set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++)
+  std::string res;
+  for(std::set<node *>::const_iterator i = all_nodes.begin(); i != all_nodes.end(); i++)
     if(preset_nodes.find(*i) == preset_nodes.end()) {
       static const int default_gate_order[2] = { T1, T2 };
       static const int mosfet_gate_order[3] = { T1, GATE, T2 };
@@ -2611,7 +2611,7 @@ int l_make_match(lua_State *L)
       res += buf;
     }
 
-  for(set<net *>::const_iterator i = all_nets.begin(); i != all_nets.end(); i++) {
+  for(std::set<net *>::const_iterator i = all_nets.begin(); i != all_nets.end(); i++) {
     net *n = *i;
     if(preset_nets.find(n) == preset_nets.end()) {
       if(n->id == -1 || state->ninfo.names[n->id].empty())
@@ -2627,11 +2627,11 @@ int l_make_match(lua_State *L)
 }
 
 struct match_entry {
-  string type;
-  vector<string> params;
+  std::string type;
+  std::vector<std::string> params;
 };
 
-bool string_match(string::const_iterator ns, string::const_iterator ne, string::const_iterator ms, string::const_iterator me)
+bool string_match(std::string::const_iterator ns, std::string::const_iterator ne, std::string::const_iterator ms, std::string::const_iterator me)
 {
   while(ms != me) {
     switch(*ms) {
@@ -2663,7 +2663,7 @@ bool string_match(string::const_iterator ns, string::const_iterator ne, string::
   return ns == ne;
 }
 
-bool string_match(string name, string mask)
+bool string_match(std::string name, std::string mask)
 {
   return string_match(name.begin(), name.end(), mask.begin(), mask.end());
 }
@@ -2671,10 +2671,10 @@ bool string_match(string name, string mask)
 int l_match(lua_State *L)
 {
   luaL_argcheck(L, lua_istable(L, 1), 1, "node array expected");
-  luaL_argcheck(L, lua_isstring(L, 2), 2, "match string exepected");
+  luaL_argcheck(L, lua_isstring(L, 2), 2, "match std::string exepected");
   luaL_argcheck(L, lua_gettop(L) < 3 || lua_istable(L, 3) || lua_isnil(L, 3), 3, "presets expected");
 
-  set<node *> all_nodes;
+  std::set<node *> all_nodes;
   lua_pushvalue(L, 1);
   lua_pushnil(L);
   while(lua_next(L, -2) != 0) {
@@ -2685,12 +2685,12 @@ int l_match(lua_State *L)
   }
   lua_pop(L, 1);
 
-  string match = lua_tostring(L, 2);
+  std::string match = lua_tostring(L, 2);
 
-  map<string, node *> preset_nodes;
-  map<string, net *> preset_nets;
-  set<node *> preset_nodes_set;
-  set<net *> preset_nets_set;
+  std::map<std::string, node *> preset_nodes;
+  std::map<std::string, net *> preset_nets;
+  std::set<node *> preset_nodes_set;
+  std::set<net *> preset_nets_set;
 
   if(lua_gettop(L) >= 3 && !lua_isnil(L, 3)) {
     lua_pushvalue(L, 3);
@@ -2698,7 +2698,7 @@ int l_match(lua_State *L)
     while(lua_next(L, -2) != 0) {
       lt *l = lt::getparam_any(L, -1);
       lua_pushvalue(L, -2);
-      string name = lua_tostring(L, -1);
+      std::string name = lua_tostring(L, -1);
       if(dynamic_cast<node *>(l)) {
 	preset_nodes[name] = static_cast<node *>(l);
 	preset_nodes_set.insert(static_cast<node *>(l));
@@ -2711,19 +2711,19 @@ int l_match(lua_State *L)
     lua_pop(L, 1);
   }
 
-  map<string, match_entry> matches;
-  map<string, string> name_constraints;
+  std::map<std::string, match_entry> matches;
+  std::map<std::string, std::string> name_constraints;
 
-  string::iterator p = match.begin();
+  std::string::iterator p = match.begin();
   while(p != match.end()) {
     while(p != match.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == match.end())
       break;
-    string::iterator q = p;
+    std::string::iterator q = p;
     while(p != match.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != '=' && *p != '~')
       p++;
-    string name = string(q, p);
+    std::string name = std::string(q, p);
     while(p != match.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == match.end())
@@ -2738,7 +2738,7 @@ int l_match(lua_State *L)
       q = p;
       while(p != match.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != '(')
 	p++;
-      me.type = string(q, p);
+      me.type = std::string(q, p);
       int np;
       if(me.type == "t" || me.type == "d" || me.type == "i")
 	np = 3;
@@ -2767,7 +2767,7 @@ int l_match(lua_State *L)
 	q = p;
 	while(p != match.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ')' && *p != ',')
 	  p++;
-	me.params.push_back(string(q, p));
+	me.params.push_back(std::string(q, p));
 	while(p != match.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
 	  p++;
 	if(p == match.end())
@@ -2793,18 +2793,18 @@ int l_match(lua_State *L)
       q = p;
       while(p != match.end() && *p != ' ' && *p != '\n' && *p != '\t')
 	p++;
-      name_constraints[name] = string(q, p);
+      name_constraints[name] = std::string(q, p);
     } else {
       fprintf(stderr, "match: expected = or ~ after %s\n", name.c_str());
       exit(1);
     }
   }
 
-  list<string> match_order;
-  set<string> match_tagged;
+  std::vector<std::string> match_order;
+  std::set<std::string> match_tagged;
 
-  list<string> match_unordered;
-  for(map<string, match_entry>::iterator i = matches.begin(); i != matches.end(); i++) {
+  std::vector<std::string> match_unordered;
+  for(std::map<std::string, match_entry>::iterator i = matches.begin(); i != matches.end(); i++) {
     if(preset_nodes.find(i->first) != preset_nodes.end()) {
       match_order.push_back(i->first);
       for(unsigned int j=0; j != i->second.params.size(); j++)
@@ -2813,13 +2813,13 @@ int l_match(lua_State *L)
       match_unordered.push_back(i->first);
   }
 
-  for(map<string, net *>::iterator i = preset_nets.begin(); i != preset_nets.end(); i++)
+  for(std::map<std::string, net *>::iterator i = preset_nets.begin(); i != preset_nets.end(); i++)
     match_tagged.insert(i->first);
 
   while(!match_unordered.empty()) {
     int best_free_count = 0;
-    list<string>::iterator best_free;
-    for(list<string>::iterator i = match_unordered.begin(); i != match_unordered.end();) {
+    std::vector<std::string>::iterator best_free;
+    for(std::vector<std::string>::iterator i = match_unordered.begin(); i != match_unordered.end();) {
       const match_entry &m = matches[*i];
       int count = 0;
       for(unsigned int j=0; j != m.params.size(); j++)
@@ -2827,7 +2827,7 @@ int l_match(lua_State *L)
 	  count++;
       if(!count) {
 	match_order.push_back(*i);
-	list<string>::iterator ii = i;
+	std::vector<std::string>::iterator ii = i;
 	i++;
 	match_unordered.erase(ii);
       } else {
@@ -2852,24 +2852,24 @@ int l_match(lua_State *L)
   }
 
   int slot = 0;
-  vector<set<node *>::iterator> cursors;
-  vector<int> alts;
-  vector<bool> fixed;
+  std::vector<std::set<node *>::iterator> cursors;
+  std::vector<int> alts;
+  std::vector<bool> fixed;
   cursors.resize(matches.size());
   alts.resize(matches.size());
-  list<string>::iterator cur_match = match_order.begin();
-  map<string, node *> cur_nodes;
-  map<string, net *> cur_nets;
-  map<string, int> net_slots;
-  set<node *> used_nodes;
-  set<net *> used_nets;
+  std::vector<std::string>::iterator cur_match = match_order.begin();
+  std::map<std::string, node *> cur_nodes;
+  std::map<std::string, net *> cur_nets;
+  std::map<std::string, int> net_slots;
+  std::set<node *> used_nodes;
+  std::set<net *> used_nets;
   goto changed_slot;
 
  changed_slot:
   {
     if(0)
       fprintf(stderr, "changed slot %d\n", slot);
-    map<string, node *>::const_iterator pi = preset_nodes.find(*cur_match);
+    std::map<std::string, node *>::const_iterator pi = preset_nodes.find(*cur_match);
     if(pi == preset_nodes.end())
       cursors[slot] = all_nodes.begin();
     else
@@ -2926,7 +2926,7 @@ int l_match(lua_State *L)
     }
     const match_entry &me = matches[*cur_match];
     node *n = *cursors[slot];
-    vector<net *> params;
+    std::vector<net *> params;
     params.resize(me.params.size());
     if(me.type == "t" || me.type == "d" || me.type == "i") {
       switch(alts[slot]) {
@@ -2955,13 +2955,13 @@ int l_match(lua_State *L)
     } else
       params[0] = n->nets[T1];
 
-    map<string, net *> temp_nets;
-    set<net *> temp_used_nets;
+    std::map<std::string, net *> temp_nets;
+    std::set<net *> temp_used_nets;
     for(unsigned int i=0; i != me.params.size(); i++) {
       if(0) {
 	fprintf(stderr, "  check param %d (%s) vs. %p (%d)\n", i, me.params[i].c_str(), params[i], params[i]->id);
       }
-      map<string, net *>::const_iterator ni = cur_nets.find(me.params[i]);
+      std::map<std::string, net *>::const_iterator ni = cur_nets.find(me.params[i]);
       if(ni == cur_nets.end()) {
 	ni = preset_nets.find(me.params[i]);
 	if(ni == preset_nets.end()) {
@@ -2988,7 +2988,7 @@ int l_match(lua_State *L)
 	temp_nets[me.params[i]] = params[i];
     }
 
-    for(map<string, net *>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
+    for(std::map<std::string, net *>::const_iterator i = temp_nets.begin(); i != temp_nets.end(); i++) {
       cur_nets[i->first] = i->second;
       used_nets.insert(i->second);
       net_slots[i->first] = slot;
@@ -3020,7 +3020,7 @@ int l_match(lua_State *L)
     if(0)
       fprintf(stderr, "next non alt in slot %d\n", slot);
 
-    map<string, node *>::const_iterator pi = preset_nodes.find(*cur_match);
+    std::map<std::string, node *>::const_iterator pi = preset_nodes.find(*cur_match);
     if(pi != preset_nodes.end())
       goto backoff_slot;
     cursors[slot]++;
@@ -3039,7 +3039,7 @@ int l_match(lua_State *L)
     cur_match--;
     const match_entry &me = matches[*cur_match];
     for(unsigned int i=0; i != me.params.size(); i++) {
-      map<string, int>::iterator j = net_slots.find(me.params[i]);
+      std::map<std::string, int>::iterator j = net_slots.find(me.params[i]);
       if(j != net_slots.end() && j->second == slot) {
 	assert(used_nets.find(cur_nets[me.params[i]]) != used_nets.end());
 	used_nets.erase(used_nets.find(cur_nets[me.params[i]]));;
@@ -3066,11 +3066,11 @@ int l_match(lua_State *L)
 
  match:
   lua_newtable(L);
-  for(map<string, node *>::const_iterator i = cur_nodes.begin(); i != cur_nodes.end(); i++) {
+  for(std::map<std::string, node *>::const_iterator i = cur_nodes.begin(); i != cur_nodes.end(); i++) {
     i->second->wrap(L);
     lua_setfield(L, -2, i->first.c_str());
   }
-  for(map<string, net *>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++) {
+  for(std::map<std::string, net *>::const_iterator i = cur_nets.begin(); i != cur_nets.end(); i++) {
     i->second->wrap(L);
     lua_setfield(L, -2, i->first.c_str());
   }
@@ -3082,17 +3082,17 @@ int l_move(lua_State *L)
   luaL_argcheck(L, lua_istable(L, 1), 1, "node hash expected");
   luaL_argcheck(L, lua_isnumber(L, 2), 2, "x coordinate expected");
   luaL_argcheck(L, lua_isnumber(L, 3), 3, "y coordinate expected");
-  luaL_argcheck(L, lua_isstring(L, 4), 4, "movement string exepected");
+  luaL_argcheck(L, lua_isstring(L, 4), 4, "movement std::string exepected");
 
-  map<string, node *> nodes;
-  map<string, net *> nets;
+  std::map<std::string, node *> nodes;
+  std::map<std::string, net *> nets;
 
   lua_pushvalue(L, 1);
   lua_pushnil(L);
   while(lua_next(L, -2) != 0) {
     lt *l = lt::getparam_any(L, -1);
     lua_pushvalue(L, -2);
-    string name = lua_tostring(L, -1);
+    std::string name = lua_tostring(L, -1);
     if(dynamic_cast<node *>(l))
       nodes[name] = static_cast<node *>(l);
     else
@@ -3105,17 +3105,17 @@ int l_move(lua_State *L)
   int x = lua_tointeger(L, 2);
   int y = lua_tointeger(L, 3);
 
-  string move = lua_tostring(L, 4);
-  string::iterator p = move.begin();
+  std::string move = lua_tostring(L, 4);
+  std::string::iterator p = move.begin();
   while(p != move.end()) {
     while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == move.end())
       break;
-    string::iterator q = p;
+    std::string::iterator q = p;
     while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t')
       p++;
-    string name = string(q, p);
+    std::string name = std::string(q, p);
     node *n = nodes[name];
     if(!n) {
       fprintf(stderr, "move: Error, node %s not given\n", name.c_str());
@@ -3128,7 +3128,7 @@ int l_move(lua_State *L)
     q = p;
     while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t')
       p++;
-    int dx = strtol(string(q, p).c_str(), 0, 10);
+    int dx = strtol(std::string(q, p).c_str(), 0, 10);
     while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == move.end())
@@ -3136,7 +3136,7 @@ int l_move(lua_State *L)
     q = p;
     while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
       p++;
-    int dy = strtol(string(q, p).c_str(), 0, 10);
+    int dy = strtol(std::string(q, p).c_str(), 0, 10);
 
     n->move(x+dx, ((state->info.sy - 1)/ratio) - (y+dy));
     while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
@@ -3147,7 +3147,7 @@ int l_move(lua_State *L)
       q = p;
       while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
 	p++;
-      string net_name(q+1, p);
+      std::string net_name(q+1, p);
       if(net_name != "") {
 	if(nets.find(net_name) == nets.end()) {
 	  fprintf(stderr, "move: net %s not found\n", net_name.c_str());
@@ -3178,7 +3178,7 @@ int l_move(lua_State *L)
 	q = p;
 	while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
 	  p++;
-	n->set_subtype(string(q, p));
+	n->set_subtype(std::string(q, p));
       }
       while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
 	p++;
@@ -3198,16 +3198,16 @@ int l_route(lua_State *L)
   luaL_argcheck(L, lua_istable(L, 1), 1, "net hash expected");
   luaL_argcheck(L, lua_isnumber(L, 2), 2, "x coordinate expected");
   luaL_argcheck(L, lua_isnumber(L, 3), 3, "y coordinate expected");
-  luaL_argcheck(L, lua_isstring(L, 4), 4, "routing string exepected");
+  luaL_argcheck(L, lua_isstring(L, 4), 4, "routing std::string exepected");
 
-  map<string, net *> nets;
+  std::map<std::string, net *> nets;
 
   lua_pushvalue(L, 1);
   lua_pushnil(L);
   while(lua_next(L, -2) != 0) {
     lt *l = lt::getparam_any(L, -1);
     lua_pushvalue(L, -2);
-    string name = lua_tostring(L, -1);
+    std::string name = lua_tostring(L, -1);
     if(dynamic_cast<net *>(l))
       nets[name] = static_cast<net *>(l);
 
@@ -3218,17 +3218,17 @@ int l_route(lua_State *L)
   int x = lua_tointeger(L, 2);
   int y = lua_tointeger(L, 3);
 
-  string move = lua_tostring(L, 4);
-  string::iterator p = move.begin();
+  std::string move = lua_tostring(L, 4);
+  std::string::iterator p = move.begin();
   while(p != move.end()) {
     while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
       p++;
     if(p == move.end())
       break;
-    string::iterator q = p;
+    std::string::iterator q = p;
     while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t')
       p++;
-    string name = string(q, p);
+    std::string name = std::string(q, p);
     net *n = nets[name];
     if(!n) {
       fprintf(stderr, "move: Error, net %s not given\n", name.c_str());
@@ -3242,7 +3242,7 @@ int l_route(lua_State *L)
       q = p;
       while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t')
 	p++;
-      int dx = strtol(string(q, p).c_str(), 0, 10);
+      int dx = strtol(std::string(q, p).c_str(), 0, 10);
       while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
 	p++;
       if(p == move.end())
@@ -3250,7 +3250,7 @@ int l_route(lua_State *L)
       q = p;
       while(p != move.end() && *p != ' ' && *p != '\n' && *p != '\t' && *p != ',')
 	p++;
-      int dy = strtol(string(q, p).c_str(), 0, 10);
+      int dy = strtol(std::string(q, p).c_str(), 0, 10);
 
       n->add_route(point(x+dx, sy1 - (y+dy)));
       while(p != move.end() && (*p == ' ' || *p == '\n' || *p == '\t'))
@@ -3272,7 +3272,7 @@ int l_setup(lua_State *L)
 
   sy1 = (state->info.sy-1)/ratio;
 
-  map<int, list<ref> > nodemap;
+  std::map<int, std::vector<ref>> nodemap;
 
   build_mosfets(nodes, nodemap);
   build_capacitors(nodes, nodemap);
@@ -3343,7 +3343,7 @@ static const luaL_Reg lualibs[] = {
   { }
 };
 
-void lua_fun(const char *fname, vector<node *> &nodes, vector<net *> &nets)
+void lua_fun(const char *fname, std::vector<node *> &nodes, std::vector<net *> &nets)
 {
   lua_State *L = luaL_newstate();
 

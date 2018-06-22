@@ -40,7 +40,7 @@ void NetStateList::net_closed(int net)
 
 void NetStateList::close()
 {
-  for(map<int, NetState *>::const_iterator i = nets.begin(); i != nets.end(); i++)
+  for(auto i = nets.begin(); i != nets.end(); i++)
     state.highlight[i->first] = false;
   closed();
   QScrollArea::close();

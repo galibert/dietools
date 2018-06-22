@@ -9,12 +9,12 @@
 
 class net_info {
 public:
-  vector<string> names;
-  map<string, int> nets;
+  std::vector<std::string> names;
+  std::map<std::string, int> nets;
 
   net_info(const char *fname, const circuit_map &cmap, const circuit_info &info);
-  string net_name(int net) const;
-  int find(string name) const;
+  std::string net_name(int net) const;
+  int find(std::string name) const;
 
 private:
   char *pos;

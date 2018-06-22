@@ -33,7 +33,7 @@ void NetState::changed_r()
   state.fixed_level[net] = fixed_level;
   if(is_fixed)
     state.power[net] = fixed_level;
-  set<int> changed;
+  std::set<int> changed;
   changed.insert(net);
   state.apply_changed(changed);
   state_change();

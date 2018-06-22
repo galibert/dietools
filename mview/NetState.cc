@@ -35,7 +35,7 @@ void NetState::changed_r()
     state->forced_power[net] = p;
     if(p != State::S_FLOAT)
       state->power[net] = p;
-    set<int> changed;
+    std::set<int> changed;
     changed.insert(net);
     state->apply_changed(changed);
     state_change();

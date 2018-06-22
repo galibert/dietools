@@ -12,8 +12,6 @@
 #include "SVMain.h"
 #include "state.h"
 
-using namespace std;
-
 int main(int argc, char **argv)
 {
   schem_file = argv[1];

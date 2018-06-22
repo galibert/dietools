@@ -17,9 +17,7 @@
 #include "nanosvg.h"
 #include "nanosvgrast.h"
 
-using namespace std;
-
-map<string, int> layer_offsets;
+std::map<std::string, int> layer_offsets;
 int sx, sx8, sy;
 
 void bad_pixel(const char *layer, int pix, int p2, const unsigned char *src)
@@ -28,11 +26,6 @@ void bad_pixel(const char *layer, int pix, int p2, const unsigned char *src)
   int y = sy - 1 - pix / sx8;
   fprintf(stderr, "Bad pixel in layer %s, x=%d y=%d color=#%02x%02x%02x%02x\n", layer, x, y, src[3], src[2], src[1], src[0]);
   exit(1);
-}
-
-static int iabs(int v)
-{
-  return v >= 0 ? v : -v;
 }
 
 void test_pixel_blue(const char *layer, int pix, int p2, const unsigned char *src)
@@ -108,8 +101,8 @@ int main(int argc, char **argv)
   sx8 = (sx+7)/8;
 
   char buf[4096];
-  vector<char> svg;
-  vector<unsigned char> pbm;
+  std::vector<char> svg;
+  std::vector<unsigned char> pbm;
 
   pbm.resize(256);
   int off = sprintf((char *)&pbm[0], "P4\n%d %d\n", sx, sy);
@@ -166,7 +159,7 @@ int main(int argc, char **argv)
 
     printf("%s\n", layer_name);
     fflush(stdout);
-    for(map<string, int>::const_iterator j = layer_offsets.begin(); j != layer_offsets.end(); j++)
+    for(std::map<std::string, int>::const_iterator j = layer_offsets.begin(); j != layer_offsets.end(); j++)
       memcpy(&svg[j->second], j->first == layer_name ? "inline\"" : "none\"  ", 7);
 
     char *s = strdup(&svg[0]);

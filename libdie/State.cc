@@ -108,7 +108,7 @@ State::State(const char *info_path, const char *cmap_path, const char *pins_path
 void State::reset_to_floating()
 {
   power = forced_power;
-  set<int> changed;
+  std::set<int> changed;
   memset(&power_dist[0], 0, sizeof(int)*info.nets.size());
   for(unsigned int i=0; i != forced_power.size(); i++)
     if(forced_power[i] != S_FLOAT)
@@ -118,7 +118,7 @@ void State::reset_to_floating()
 
 void State::reset_to_zero()
 {
-  set<int> changed;
+  std::set<int> changed;
   for(unsigned int i=0; i != forced_power.size(); i++) {
     changed.insert(i);
     if(forced_power[i] != S_FLOAT) {
@@ -132,18 +132,17 @@ void State::reset_to_zero()
   apply_changed(changed);
 }
 
-void State::apply_changed(set<int> changed)
+void State::apply_changed(std::set<int> changed)
 {
   int count = 0;
   while(!changed.empty() && count < 1100) {
     bool verbose = count > 1000;
-    set<int> influenced;
-    for(set<int>::const_iterator i = changed.begin(); i != changed.end(); i++) {
+    std::set<int> influenced;
+    for(auto i = changed.begin(); i != changed.end(); i++) {
       int net = *i;
-      map<int, list<int> >::const_iterator j;
-      j = info.gate_to_trans.find(net);
+      auto j = info.gate_to_trans.find(net);
       if(j != info.gate_to_trans.end()) {
-	for(list<int>::const_iterator k = j->second.begin(); k != j->second.end(); k++) {
+	for(auto k = j->second.begin(); k != j->second.end(); k++) {
 	  const tinfo &ti = info.trans[*k];
 	  influenced.insert(ti.t1);
 	  influenced.insert(ti.t2);
@@ -151,7 +150,7 @@ void State::apply_changed(set<int> changed)
       }
       j = info.term_to_trans.find(net);
       if(j != info.term_to_trans.end()) {
-	for(list<int>::const_iterator k = j->second.begin(); k != j->second.end(); k++) {
+	for(auto k = j->second.begin(); k != j->second.end(); k++) {
 	  const tinfo &ti = info.trans[*k];
 	  int other = ti.t1 == net ? ti.t2 : ti.t1;
 	  if(other != net)
@@ -163,15 +162,15 @@ void State::apply_changed(set<int> changed)
     if(0)
       fprintf(stderr, "%d changed, %d influenced\n", int(changed.size()), int(influenced.size()));
     changed.clear();
-    for(set<int>::const_iterator i = influenced.begin(); i != influenced.end(); i++) {
+    for(auto i = influenced.begin(); i != influenced.end(); i++) {
       int net = *i;
       if(forced_power[*i] != S_FLOAT)
 	continue;
       double drive_0 = 0, drive_1 = 0;
       int dist_0 = -1, dist_1 = -1;
-      map<int, list<int> >::const_iterator j = info.term_to_trans.find(*i);
+      auto j = info.term_to_trans.find(*i);
       if(j != info.term_to_trans.end()) {
-	for(list<int>::const_iterator k = j->second.begin(); k != j->second.end(); k++) {
+	for(auto k = j->second.begin(); k != j->second.end(); k++) {
 	  const tinfo &ti = info.trans[*k];
 	  if(ignored[*k])
 	    continue;

@@ -1,8 +1,6 @@
 #include "fill.h"
 
-#include <list>
-
-using namespace std;
+#include <vector>
 
 struct fill_coord {
   int x, y;
@@ -10,7 +8,7 @@ struct fill_coord {
 };
 
 
-static void fill_1(list<fill_coord> &fc, int x, int y, int sx, int sy, int color,
+static void fill_1(std::vector<fill_coord> &fc, int x, int y, int sx, int sy, int color,
 		   boost::function<void(int, int)> set_pixel,
 		   boost::function<int(int, int)> read_color,
 		   boost::function<bool(int, int)> test_pixel)
@@ -40,12 +38,12 @@ static void fill_1(list<fill_coord> &fc, int x, int y, int sx, int sy, int color
 
 void fill(int x, int y, int sx, int sy, int color, boost::function<void(int, int)> set_pixel, boost::function<int(int, int)> read_color, boost::function<bool(int, int)> test_pixel)
 {
-  list<fill_coord> fc;
+  std::vector<fill_coord> fc;
   fc.push_back(fill_coord(x, y));
   while(!fc.empty()) {
     int xx = fc.front().x;
     int yy = fc.front().y;
-    fc.pop_front();
+    fc.erase(fc.begin());
     fill_1(fc, xx, yy, sx, sy, color, set_pixel, read_color, test_pixel);
   }
 }
