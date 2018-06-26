@@ -3,11 +3,15 @@
 
 #include <stdio.h>
 
+#include <QFileSystemWatcher>
+
 SVMain::SVMain(QWidget *parent) : QMainWindow(parent)
 {
   state_load(schem_file);
   svmain = this;
   setupUi(this);
+  schem_watch = new QFileSystemWatcher;
+  QObject::connect(schem_watch, SIGNAL(fileChanged(const QString &)), display_widget, SLOT(reload()));
   nlist = NULL;
 }
 
@@ -40,13 +44,22 @@ void SVMain::track(int net)
     QObject::connect(nlist, SIGNAL(state_change_up()), this, SLOT(state_changed()));
     QObject::connect(nlist, SIGNAL(closed()), this, SLOT(net_list_closed()));
   }
-  nlist->show();  
+  nlist->show();
   nlist->add_net(net);
 }
 
 void SVMain::state_changed()
 {
   state_change();
+}
+
+void SVMain::auto_reload_toggle(bool enabled)
+{
+  if(enabled) {
+      schem_watch->addPath(schem_file);
+  } else {
+      schem_watch->removePath(schem_file);
+  }
 }
 
 void SVMain::close()
