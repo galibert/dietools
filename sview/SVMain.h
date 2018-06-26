@@ -4,6 +4,8 @@
 #include "ui_SVMainUI.h"
 #include "NetStateList.h"
 
+#include <QFileSystemWatcher>
+
 class SVMain : public QMainWindow, private Ui::SVMainUI {
   Q_OBJECT
 
@@ -21,9 +23,11 @@ public slots:
   void state_changed();
   void close();
   void net_list_closed();
+  void auto_reload_toggle(bool);
 
 private:
   NetStateList *nlist;
+  QFileSystemWatcher *schem_watch;
 };
 
 #endif

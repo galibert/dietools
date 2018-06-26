@@ -56,7 +56,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>19</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -80,8 +80,15 @@
     <addaction name="actionTrace_next"/>
     <addaction name="actionTrace_prev"/>
    </widget>
+   <widget class="QMenu" name="menuOptions">
+    <property name="title">
+     <string>Options</string>
+    </property>
+    <addaction name="actionAuto_Reload"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuZoom"/>
+   <addaction name="menuOptions"/>
    <addaction name="menuTrace"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -102,6 +109,9 @@
    </property>
   </action>
   <action name="actionZoom_Out">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Zoom &amp;Out</string>
    </property>
@@ -131,6 +141,14 @@
    </property>
    <property name="shortcut">
     <string>Left</string>
+   </property>
+  </action>
+  <action name="actionAuto_Reload">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-Reload</string>
    </property>
   </action>
  </widget>
@@ -315,6 +333,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionAuto_Reload</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>SVMainUI</receiver>
+   <slot>auto_reload_toggle(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <signal>state_change()</signal>
@@ -323,5 +357,6 @@
   <slot>track(int)</slot>
   <slot>state_changed()</slot>
   <slot>net_list_closed()</slot>
+  <slot>auto_reload_toggle(bool)</slot>
  </slots>
 </ui>
