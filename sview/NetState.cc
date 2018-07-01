@@ -19,7 +19,7 @@ NetState::NetState(int _net, QWidget *parent) : QWidget(parent)
 
 void NetState::state_changed()
 {
-  char volt[4];
+  char volt[32];
   int pp = state.power[net];
   sprintf(volt, "%d.%d", pp/10, pp%10);
   power->setText(volt);

@@ -2260,20 +2260,11 @@ void draw(const char *format, const std::vector<node *> &nodes, const std::vecto
 
 void save_txt(const char *fname, int sx, int sy, const std::vector<node *> &nodes, const std::vector<net *> &nets)
 {
-  char msg[4096];
-  char tmp_template[14] =  { 'm', 's', 'c', 'h', 'e', 'm', '-', 'X', 'X', 'X', 'X', 'X', 'X', '\0' };
+  std::string tmpname = std::string(fname) + ".new";
 
-  int ret = mkstemp(tmp_template);
-
-  if(ret) {
-    sprintf(msg, "Error creating temporary file %s for writing", tmp_template);
-    perror(msg);
-    exit(1);
-  }
-
-  FILE *fd = fopen(tmp_template, "w");
+  FILE *fd = fopen(tmpname.c_str(), "w");
   if(!fd) {
-    perror(msg);
+    perror(("Error opening " + tmpname + "for writing: ").c_str());
     exit(1);
   }
 
@@ -2296,14 +2287,13 @@ replacement- the important part- is said to be atomic:
 https://stackoverflow.com/questions/167414/is-an-atomic-file-rename-with-overwrite-possible-on-windows#comment38520206_2368286
 */
 #ifdef _WIN32
-  ret = (int) ReplaceFile(fname, tmp_template, NULL, 0, NULL, NULL);
+  int ret = (int) ReplaceFile(fname, tmpname.c_str(), NULL, 0, NULL, NULL);
 #else
-  ret = rename(tmp_template, fname);
+  int ret = rename(tmpname.c_str(), fname);
 #endif
 
   if(ret) {
-    sprintf(msg, "Atomic rename of %s to %s failed.", tmp_template, fname);
-    perror(msg);
+    perror(("Atomic rename of " + std::string(fname) + " to " + tmpname + " failed.").c_str());
     exit(1);
   }
 }
@@ -2869,9 +2859,7 @@ int l_match(lua_State *L)
 	  count++;
       if(!count) {
 	match_order.push_back(*i);
-	std::vector<std::string>::iterator ii = i;
-	i++;
-	match_unordered.erase(ii);
+	i = match_unordered.erase(i);
       } else {
 	if(m.params.size() == 1)
 	  count += 10;
@@ -3369,13 +3357,16 @@ int luaopen_mschem(lua_State *L)
 
 static const luaL_Reg lualibs[] = {
   { "_G",            luaopen_base        },
-  { LUA_LOADLIBNAME, luaopen_package     },
+  { LUA_COLIBNAME,   luaopen_coroutine   },
   { LUA_TABLIBNAME,  luaopen_table       },
   { LUA_IOLIBNAME,   luaopen_io          },
   { LUA_OSLIBNAME,   luaopen_os          },
   { LUA_STRLIBNAME,  luaopen_string      },
+  { LUA_UTF8LIBNAME, luaopen_utf8        },
+  { LUA_BITLIBNAME,  luaopen_bit32       },
   { LUA_MATHLIBNAME, luaopen_math        },
   { LUA_DBLIBNAME,   luaopen_debug       },
+  { LUA_LOADLIBNAME, luaopen_package     },
   { "mschem",        luaopen_mschem      },
   { "mosfet",        mosfet::luaopen     },
   { "capacitor",     capacitor::luaopen  },

@@ -26,6 +26,7 @@ circuit_info::circuit_info(const char *fname)
   circs.resize(ne);
   for(int i=0; i != ne; i++) {
     int id = rd.gi();
+    (void)id;
     assert(id == i);
     cinfo &ci = circs[i];
     ci.type = rd.gw()[0];
@@ -47,6 +48,7 @@ circuit_info::circuit_info(const char *fname)
   nets.resize(ne);
   for(int i=0; i != ne; i++) {
     int id = rd.gi();
+    (void)id;
     assert(id == i);
     ninfo &ni = nets[i];
     while(!rd.eol())
@@ -59,6 +61,7 @@ circuit_info::circuit_info(const char *fname)
   trans.resize(ne);
   for(int i=0; i != ne; i++) {
     int id = rd.gi();
+    (void)id;
     assert(id == i);
     tinfo &ti = trans[i];
     ti.circ = rd.gi();
