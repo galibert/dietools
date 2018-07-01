@@ -16,6 +16,10 @@
 #include <zlib.h>
 #include <sys/time.h>
 
+#ifdef _WIN32
+  #include <windows.h>
+#endif
+
 #include <set>
 #include <string>
 #include <algorithm>
@@ -2257,8 +2261,17 @@ void draw(const char *format, const std::vector<node *> &nodes, const std::vecto
 void save_txt(const char *fname, int sx, int sy, const std::vector<node *> &nodes, const std::vector<net *> &nets)
 {
   char msg[4096];
-  sprintf(msg, "Error opening %s for writing", fname);
-  FILE *fd = fopen(fname, "w");
+  char tmp_template[14] =  { 'm', 's', 'c', 'h', 'e', 'm', '-', 'X', 'X', 'X', 'X', 'X', 'X', '\0' };
+
+  int ret = mkstemp(tmp_template);
+
+  if(ret) {
+    sprintf(msg, "Error creating temporary file %s for writing", tmp_template);
+    perror(msg);
+    exit(1);
+  }
+
+  FILE *fd = fopen(tmp_template, "w");
   if(!fd) {
     perror(msg);
     exit(1);
@@ -2274,6 +2287,25 @@ void save_txt(const char *fname, int sx, int sy, const std::vector<node *> &node
   for(unsigned int i=0; i != nets.size(); i++)
     nets[i]->to_txt(fd);
   fclose(fd);
+
+
+/* Do an atomic rename after we've written out the entire file so that
+sview only receives a single- and fully-completed- file changed notification.
+ReplaceFile isn't officially documented as an atomic operation, but the data
+replacement- the important part- is said to be atomic:
+https://stackoverflow.com/questions/167414/is-an-atomic-file-rename-with-overwrite-possible-on-windows#comment38520206_2368286
+*/
+#ifdef _WIN32
+  ret = (int) ReplaceFile(fname, tmp_template, NULL, 0, NULL, NULL);
+#else
+  ret = rename(tmp_template, fname);
+#endif
+
+  if(ret) {
+    sprintf(msg, "Atomic rename of %s to %s failed.", tmp_template, fname);
+    perror(msg);
+    exit(1);
+  }
 }
 
 void build_mosfets(std::vector<node *> &nodes, std::map<int, std::vector<ref> > &nodemap)
