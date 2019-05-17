@@ -35,7 +35,7 @@ extern "C" {
 
 #include <fontconfig/fontconfig.h>
 
-const char *opt_text, *opt_svg, *opt_tiles;
+const char *opt_text, *opt_svg, *opt_geojson, *opt_tiles;
 
 double ratio;
 int sy1;
@@ -218,7 +218,7 @@ public:
   void mipmap(const patch &p1, int dx, int dy);
   void bitmap_blend(int ox, int oy, const unsigned char *src, int src_w, int src_h, int x, int y);
 
-  void save_png(const char *fname);
+  void save_png(const char *fname, int rsx, int rsy);
 
 private:
   static void w32(unsigned char *p, unsigned int l);
@@ -271,9 +271,9 @@ void patch::wchunk(int fd, unsigned int type, unsigned char *p, unsigned int l)
   write(fd, v, 4);
 }
 
-void patch::save_png(const char *fname)
+void patch::save_png(const char *fname, int rsx, int rsy)
 {
-  char msg[4096];
+  char msg[4096+256];
   sprintf(msg, "Error opening %s for writing", fname);
   int fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, 0666);
   if(fd < 0) {
@@ -281,6 +281,7 @@ void patch::save_png(const char *fname)
     exit(1);
   }
 
+  bool border = rsx < PATCH_SX || rsy < PATCH_SY;
 
   write(fd, "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A", 8);
 
@@ -288,16 +289,37 @@ void patch::save_png(const char *fname)
   w32(h, PATCH_SX);
   w32(h+4, PATCH_SY);
   h[8] = 8; // bpp
-  h[9] = 0; // grayscale
+  h[9] = border ? 4 : 0; // grayscale
   h[10] = 0; // compression
   h[11] = 0; // filter
   h[12] = 0; // interlace
   wchunk(fd, 0x49484452L, h, 13); // IHDR
 
-  int len = int((PATCH_SX+1)*PATCH_SY*1.1 + 12);
+  int len = int((PATCH_SX+1)*PATCH_SY*2.1 + 12);
   unsigned char *res = new unsigned char[len];
   unsigned long sz = len;
-  compress(res, &sz, data, (PATCH_SX+1)*PATCH_SY);
+
+  if(border) {
+    unsigned char org[(PATCH_SX*2+1)*PATCH_SY];
+    const unsigned char *src = data;
+    unsigned char *dst = org;
+    for(int y=0; y < PATCH_SY; y++) {
+      *dst++ = 0; // filtering
+      src++;
+      for(int x=0; x < PATCH_SX; x++) {
+	if(x >= rsx || y >= rsy) {
+	  *dst++ = 0;
+	  *dst++ = 0;
+	} else {
+	  *dst++ = *src;
+	  *dst++ = 255;
+	}
+	src++;
+      }
+    }      
+    compress(res, &sz, org, (PATCH_SX*2+1)*PATCH_SY);
+  } else
+    compress(res, &sz, data, (PATCH_SX+1)*PATCH_SY);
   wchunk(fd, 0x49444154L, res, sz); // IDAT
   wchunk(fd, 0x49454E44L, 0, 0); // IEND
   close(fd);
@@ -635,6 +657,7 @@ public:
   virtual point get_pos(int pin) const = 0;
   virtual void refine_position() = 0;
   virtual void to_svg(FILE *fd) const = 0;
+  virtual void to_geojson(FILE *fd, bool &prev) const = 0;
   virtual void to_txt(FILE *fd) const = 0;
   virtual void draw(patch &p, int ox, int oy) const = 0;
   void build_power_nodes_and_nets(std::vector<node *> &nodes, std::vector<net *> &nets);
@@ -667,6 +690,7 @@ public:
   point get_pos(int pin) const;
   void refine_position();
   void to_svg(FILE *fd) const;
+  void to_geojson(FILE *fd, bool &prev) const;
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
@@ -694,6 +718,7 @@ public:
   point get_pos(int pin) const;
   void refine_position();
   void to_svg(FILE *fd) const;
+  void to_geojson(FILE *fd, bool &prev) const;
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
@@ -716,6 +741,7 @@ public:
   point get_pos(int pin) const;
   void refine_position();
   void to_svg(FILE *fd) const;
+  void to_geojson(FILE *fd, bool &prev) const;
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
@@ -742,6 +768,7 @@ public:
   point get_pos(int pin) const;
   void refine_position();
   void to_svg(FILE *fd) const;
+  void to_geojson(FILE *fd, bool &prev) const;
   void to_txt(FILE *fd) const;
   virtual void draw(patch &p, int ox, int oy) const;
   void set_orientation(char orient, net *source);
@@ -779,6 +806,7 @@ public:
   void add_link_keys(int nid, std::vector<uint64_t> &link_keys) const;
   void handle_key(uint64_t k);
   void to_svg(FILE *fd) const;
+  void to_geojson(FILE *fd, bool &prev) const;
   void to_txt(FILE *fd) const;
   void draw(patch &p, int ox, int oy) const;
   static net *checkparam(lua_State *L, int idx);
@@ -898,6 +926,30 @@ void svg_text(FILE *fd, point p, std::string text, int px, int size)
 void svg_close(FILE *fd)
 {
   fprintf(fd, "</svg>\n");
+  fclose(fd);
+}
+
+FILE *geojson_open(const char *fname, int width, int height)
+{
+  char msg[4096];
+  sprintf(msg, "Error opening %s for writing", fname);
+  FILE *fd = fopen(fname, "w");
+  if(!fd) {
+    perror(msg);
+    exit(1);
+  }
+
+  fprintf(fd, "{\n");
+  fprintf(fd, "  \"type\": \"FeatureCollection\",\n");
+  fprintf(fd, "  \"features\": [\n");
+  return fd;
+}
+
+void geojson_close(FILE *fd)
+{
+  fprintf(fd, "\n");
+  fprintf(fd, "  ]\n");
+  fprintf(fd, "}\n");
   fclose(fd);
 }
 
@@ -1128,6 +1180,10 @@ void power_node::to_svg(FILE *fd) const
   fprintf(fd, "  </g>\n");
 }
 
+void power_node::to_geojson(FILE *fd, bool &prev) const
+{
+}
+
 void power_node::to_txt(FILE *fd) const
 {
   fprintf(fd, "%c %d %d %d %s\n", is_vcc ? 'v' : 'g', pos.x, sy1-pos.y, nets[0]->nid, oname.c_str());
@@ -1265,6 +1321,10 @@ void pad::to_svg(FILE *fd) const
   pt.y += 3;
   svg_text(fd, pt, name, 0, 9);
   fprintf(fd, "  </g>\n");
+}
+
+void pad::to_geojson(FILE *fd, bool &prev) const
+{
 }
 
 void pad::to_txt(FILE *fd) const
@@ -1622,6 +1682,10 @@ void mosfet::to_svg(FILE *fd) const
   fprintf(fd, "  </g>\n");
 }
 
+void mosfet::to_geojson(FILE *fd, bool &prev) const
+{
+}
+
 void mosfet::to_txt(FILE *fd) const
 {
   static const char ttype_string[] = "tid";
@@ -1865,6 +1929,10 @@ void capacitor::to_svg(FILE *fd) const
   fprintf(fd, "  </g>\n");
 }
 
+void capacitor::to_geojson(FILE *fd, bool &prev) const
+{
+}
+
 void capacitor::to_txt(FILE *fd) const
 {
   fprintf(fd, "c %d %d %d %d %g %d %s\n", pos.x, sy1-pos.y, nets[T1]->nid, nets[T2]->nid, f, orientation, oname.c_str());
@@ -2101,6 +2169,81 @@ void net::to_svg(FILE *fd) const
   fprintf(fd, "  </g>\n");
 }
 
+void net::to_geojson(FILE *fd, bool &prev) const
+{
+  if(nodes.empty())
+    return;
+
+  int np = nodes.size() + routes.size();
+  std::vector<point> pt;
+  std::map<int, int> use_count;
+  pt.resize(np);
+
+  for(unsigned int i = 0; i != nodes.size(); i++) {
+    pt[i] = nodes[i].n->get_pos(nodes[i].pin);
+    use_count[pt[i].y*65536 + pt[i].x]++;
+  }
+  for(unsigned int i = 0; i != routes.size(); i++)
+    pt[i+nodes.size()] = routes[i];
+
+  bool first = true;
+  for(auto i = draw_order.begin(); i != draw_order.end(); i++) {
+    if(pt[i->first].x == pt[i->second].x && pt[i->first].y == pt[i->second].y)
+      continue;
+    if(first) {
+      if(prev)
+	fprintf(fd, ",\n");
+      prev = true;
+      fprintf(fd, "    {\n");
+      fprintf(fd, "      \"type\": \"Feature\",\n");
+      fprintf(fd, "      \"geometry\": {\n");
+      fprintf(fd, "        \"type\": \"MultiLineString\",\n");
+      fprintf(fd, "        \"coordinates\": [\n");      
+      first = false;
+    } else
+      fprintf(fd, ",\n");
+    fprintf(fd, "          [[%d, %d], [%d, %d]]", pt[i->first].x, pt[i->first].y, pt[i->second].x, pt[i->second].y);
+    use_count[pt[i->first].y*65536 + pt[i->first].x]++;
+    use_count[pt[i->second].y*65536 + pt[i->second].x]++;
+  }
+
+  for(auto i = use_count.begin(); i != use_count.end(); i++)
+    if(i->second > 2)
+      for(int j=0; j != np; j++)
+	if(pt[j].y*65536+pt[j].x == i->first) {
+	  if(first) {
+	    if(prev)
+	      fprintf(fd, ",\n");
+	    prev = true;
+	    fprintf(fd, "    {\n");
+	    fprintf(fd, "      \"type\": \"Feature\",\n");
+	    fprintf(fd, "      \"geometry\": {\n");
+	    fprintf(fd, "        \"type\": \"MultiLineString\",\n");
+	    fprintf(fd, "        \"coordinates\": [\n");      
+	    first = false;
+	  } else
+	    fprintf(fd, ",\n");
+	  double bx = pt[j].x;
+	  double by = pt[j].y;
+	  fprintf(fd, "          [[%f, %f], [%f, %f], [%f, %f], [%f, %f], [%f, %f]]",
+		  bx-0.3, by-0.3,
+		  bx+0.3, by-0.3,
+		  bx+0.3, by+0.3,
+		  bx-0.3, by+0.3,
+		  bx-0.3, by-0.3);
+	}
+  if(first)
+    return;
+
+  fprintf(fd, "\n");
+  fprintf(fd, "        ]\n");
+  fprintf(fd, "      },\n");
+  fprintf(fd, "      \"properties\": {\n");
+  fprintf(fd, "        \"name\": \"%s\"\n", state->ninfo.net_name(id).c_str());
+  fprintf(fd, "      }\n");
+  fprintf(fd, "    }");
+}
+
 void net::to_txt(FILE *fd) const
 {
   int np = nodes.size() + routes.size();
@@ -2191,8 +2334,10 @@ void net::draw(patch &p, int ox, int oy) const
 
 void draw(const char *format, const std::vector<node *> &nodes, const std::vector<net *> &nets)
 {
-  unsigned int limx = int(state->info.sx / ratio)*10/PATCH_SX;
-  unsigned int limy = int(state->info.sy / ratio)*10/PATCH_SY;
+  unsigned int plimx = int(state->info.sx / ratio)*10;
+  unsigned int plimy = int(state->info.sy / ratio)*10;
+  unsigned int limx = plimx/PATCH_SX;
+  unsigned int limy = plimy/PATCH_SY;
 
   unsigned int maxlim = limx > limy ? limx : limy;
   unsigned int limp = 1;
@@ -2200,6 +2345,10 @@ void draw(const char *format, const std::vector<node *> &nodes, const std::vecto
     limp++;
     maxlim = maxlim >> 1;
   }
+
+  printf("size_x = %d;\n", state->info.sx);
+  printf("size_y = %d;\n", state->info.sy);
+  printf("ratio = %g;\n", ratio);
 
   char msg[4096];
   sprintf(msg, "generating images, %d levels", limp);
@@ -2224,6 +2373,8 @@ void draw(const char *format, const std::vector<node *> &nodes, const std::vecto
 
     int ox = x0 * PATCH_SX;
     int oy = y0 * PATCH_SY;
+    int lx = plimx;
+    int ly = plimy;
 
     for(unsigned int j=0; j != nno; j++)
       nodes[j]->draw(levels[0], ox, oy);
@@ -2245,13 +2396,33 @@ void draw(const char *format, const std::vector<node *> &nodes, const std::vecto
     y1 = y0;
     for(unsigned int level = 0; level < limp; level++) {
       char name[4096];
-      sprintf(name, format, limp-1-level, y1, x1);
-      levels[level].save_png(name);
+      sprintf(name, format, limp-1-level, x1, y1);
+      if(y1 == 0) {
+	char *start = name;
+	for(;;) {
+	  char *pos = strchr(start, '/');
+	  if(!pos)
+	    break;
+	  *pos = 0;
+	  mkdir(name, 0777);
+	  *pos = '/';
+	  start = pos+1;
+	}
+      }
+      levels[level].save_png(name, lx - (ox & ~(PATCH_SX - 1)), ly - (oy & ~(PATCH_SY - 1)));
       levels[level].clear();
       if(!((last_x || (x1 & 1)) && (last_y || (y1 & 1))))
 	break;
       x1 = x1 >> 1;
       y1 = y1 >> 1;
+      if(lx & 1)
+	lx++;
+      if(ly & 1)
+	ly++;
+      ox = ox >> 1;
+      oy = oy >> 1;
+      lx = lx >> 1;
+      ly = ly >> 1;
     }
     tick(tinfo, id++, (limx+1)*(limy+1));
   }
@@ -3327,6 +3498,12 @@ int l_svg(lua_State *L)
   return 0;
 }
 
+int l_geojson(lua_State *L)
+{
+  opt_geojson = lua_tostring(L, 1);
+  return 0;
+}
+
 int l_tiles(lua_State *L)
 {
   opt_tiles = lua_tostring(L, 1);
@@ -3346,6 +3523,7 @@ int luaopen_mschem(lua_State *L)
     { "setup",       l_setup       },
     { "text",        l_text        },
     { "svg",         l_svg         },
+    { "geojson",     l_geojson     },
     { "tiles",       l_tiles       },
 
     { }
@@ -3398,7 +3576,7 @@ void lua_fun(const char *fname, std::vector<node *> &nodes, std::vector<net *> &
 int main(int argc, char **argv)
 {
   ratio = 1;
-  opt_text = opt_svg = opt_tiles = NULL;
+  opt_text = opt_svg = opt_geojson, opt_tiles = NULL;
 
   freetype_init();
 
@@ -3416,12 +3594,23 @@ int main(int argc, char **argv)
     svg_close(fd);
   }
 
+  if(opt_geojson) {
+    FILE *fd = geojson_open(opt_geojson, state->info.sx / ratio * 10, state->info.sy / ratio * 10);
+    bool prev = false;
+    for(unsigned int i=0; i != nodes.size(); i++)
+      nodes[i]->to_geojson(fd, prev);
+    for(unsigned int i=0; i != nets.size(); i++)
+      nets[i]->to_geojson(fd, prev);
+
+    geojson_close(fd);
+  }
+
   if(opt_text)
     save_txt(opt_text, state->info.sx / ratio, state->info.sy / ratio, nodes, nets);
 
   if(opt_tiles) {
     char buf[4096];
-    sprintf(buf, "%s/%%d/y%%03d_x%%03d.png", opt_tiles);
+    sprintf(buf, "%s/%%d/%%d/%%d.png", opt_tiles);
     draw(buf, nodes, nets);
   }
 
