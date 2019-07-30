@@ -11,7 +11,9 @@ SVMain::SVMain(QWidget *parent) : QMainWindow(parent)
   svmain = this;
   setupUi(this);
   schem_watch = new QFileSystemWatcher;
-  QObject::connect(schem_watch, SIGNAL(fileChanged(const QString &)), display_widget, SLOT(reload()));
+  QObject::connect(schem_watch, &QFileSystemWatcher::fileChanged, display_widget, &SVDisplay::reload);
+  QObject::connect(display_widget, &SVDisplay::set_hscroll, hscroll, &QScrollBar::setValue);
+  QObject::connect(display_widget, &SVDisplay::set_vscroll, vscroll, &QScrollBar::setValue);
   nlist = NULL;
 }
 
@@ -40,9 +42,9 @@ void SVMain::track(int net)
 {
   if(!nlist) {
     nlist = new NetStateList;
-    QObject::connect(this, SIGNAL(state_change()), nlist, SLOT(state_changed_down()));
-    QObject::connect(nlist, SIGNAL(state_change_up()), this, SLOT(state_changed()));
-    QObject::connect(nlist, SIGNAL(closed()), this, SLOT(net_list_closed()));
+    QObject::connect(this, &SVMain::state_change, nlist, &NetStateList::state_changed_down);
+    QObject::connect(nlist, &NetStateList::state_change_up, this, &SVMain::state_changed);
+    QObject::connect(nlist, &NetStateList::closed, this, &SVMain::net_list_closed);
   }
   nlist->show();
   nlist->add_net(net);

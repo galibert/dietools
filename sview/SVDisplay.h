@@ -26,6 +26,8 @@ public slots:
 
 signals:
   void track(int);
+  void set_hscroll(int);
+  void set_vscroll(int);
 
 protected:
   void paintEvent(QPaintEvent *e);
@@ -33,6 +35,7 @@ protected:
 
   void mousePressEvent(QMouseEvent *e);
   void mouseMoveEvent(QMouseEvent *e);
+  void wheelEvent(QWheelEvent *e);
 
 private:
   unsigned int *generated_image;

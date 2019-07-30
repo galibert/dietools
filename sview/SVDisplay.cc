@@ -309,6 +309,28 @@ void SVDisplay::mousePressEvent(QMouseEvent *e)
     track(id & node::ID_MASK);
 }
 
+void SVDisplay::wheelEvent(QWheelEvent *event)
+{
+  QPoint numPixels = event->pixelDelta();
+  QPoint numDegrees = event->angleDelta() / 8;
+
+  QPoint delta = numPixels.isNull() ? numDegrees / 15 : numPixels;
+
+  xc -= z*delta.x();
+  yc -= z*delta.y();
+  x0 = xc - z*size().width()/2;
+  y0 = yc - z*size().height()/2;
+
+  set_hscroll(xc);
+  set_vscroll(yc);
+
+  event->accept();
+
+  generate_ids();
+  update();
+  update_status();
+}
+
 void SVDisplay::hscroll(int pos)
 {
   if(starting)

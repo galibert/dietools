@@ -19,3 +19,7 @@ mview/mview_autogen
 sview/sview_autogen
 generate-bitmask-images/generate-bitmask-images_autogen
 generate-circuit/generate-circuit_autogen
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
