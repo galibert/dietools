@@ -1174,9 +1174,9 @@ int main(int argc, char **argv)
     } else if(keyw == "metal-link") {
       metal_link_info ml;
       ml.x1 = rd.gi();
-      ml.y1 = rd.gi();
+      ml.y1 = sy-1-rd.gi();
       ml.x2 = rd.gi();
-      ml.y2 = rd.gi();
+      ml.y2 = sy-1-rd.gi();
       ml.circuit_id = -1;
       rd.nl();
       metal_links.push_back(ml);
