@@ -2541,7 +2541,7 @@ void build_pads(const char *fname, std::vector<node *> &nodes, std::map<int, std
     const pinfo &pi = pp.pads[i];
     point p;
     p.x = int(pi.x / ratio + 0.5);
-    p.y = int(((state->info.sy - 1) - pi.y) / ratio + 0.5);
+    p.y = int(pi.y / ratio + 0.5);
     int orientation;
     switch(pi.orientation) {
     case 'n': orientation = N_S; break;

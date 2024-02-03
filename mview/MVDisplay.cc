@@ -98,8 +98,17 @@ void MVDisplay::generate_image()
       int power_active, power_poly, power_metal;
       char type_active, type_poly, type_metal;
       get(0, x, y, circ_active, inside_active, net_active, type_active, power_active);
-      get(1, x, y, circ_poly, inside_poly, net_poly, type_poly, power_poly);
-      get(2, x, y, circ_metal, inside_metal, net_metal, type_metal, power_metal);
+      if(state->info.nl == 3) {
+	get(1, x, y, circ_poly, inside_poly, net_poly, type_poly, power_poly);
+	get(2, x, y, circ_metal, inside_metal, net_metal, type_metal, power_metal);
+      } else {
+	circ_poly = -1;
+	inside_poly = false;
+	net_poly = -1;
+	type_poly = '*';
+	power_poly = State::S_FLOAT;
+	get(1, x, y, circ_metal, inside_metal, net_metal, type_metal, power_metal);
+      }
       bool in_via = net_metal != -1 &&
 	((net_active != -1 && net_active == net_metal) ||
 	 ((net_poly != -1 && net_poly == net_metal)));
@@ -206,7 +215,7 @@ void MVDisplay::mouseMoveEvent(QMouseEvent *e)
 
   char msg[4096];
   char *p = msg + sprintf(msg, "%5d %5d %c:%d:%s:%c %c:%d:%s:%c %c:%d:%s:%c",
-			  posx[e->x()+1], 13999-posy[e->y()+1],
+			  posx[e->x()+1], posy[e->y()+1],
 			  type_active, circ_active, state->ninfo.net_name(net_active).c_str(), "01-"[power_active],
 			  type_poly, circ_poly, state->ninfo.net_name(net_poly).c_str(), "01-"[power_poly],
 			  type_metal, circ_metal, state->ninfo.net_name(net_metal).c_str(), "01-"[power_metal]);

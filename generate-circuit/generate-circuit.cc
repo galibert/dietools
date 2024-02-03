@@ -377,10 +377,10 @@ void clean_and_remap(time_info &tinfo, std::vector<circuit_info> &circuits, circ
       build_transistor_groups(groups, terminaux, gates, is_terminal, is_gate, circuits, i);
       if(terminaux < 2) { //  || (ci.x0 - ci.x1 <= 2 && ci.x0 - ci.x1 >= -2) || (ci.y0 - ci.y1 <= 2 && ci.y0 - ci.y1 >= -2)) {
 	if(terminaux == 0 || gates == 0) {
-	  fprintf(stderr, "P/A superposition zone (%d, %d)-(%d, %d) has no active %s\n", ci.x0, cmap.sy-1-ci.y1, ci.x1, cmap.sy-1-ci.y0, terminaux ? "gate" : "terminal");
+	  fprintf(stderr, "P/A superposition zone (%d, %d)-(%d, %d) has no active %s\n", ci.x0, ci.y1, ci.x1, ci.y0, terminaux ? "gate" : "terminal");
 	  for(set<int>::const_iterator j = ci.neighbors.begin(); j != ci.neighbors.end(); j++) {
 	    const circuit_info &ci1 = circuits[*j];
-	    fprintf(stderr, "  - %c%d (%d, %d)-(%d, %d)\n", type_names[ci1.type], *j, ci1.x0, cmap.sy-1-ci1.y1, ci1.x1, cmap.sy-1-ci1.y0);
+	    fprintf(stderr, "  - %c%d (%d, %d)-(%d, %d)\n", type_names[ci1.type], *j, ci1.x0, ci1.y1, ci1.x1, ci1.y0);
 	  }
 	  has_error = true;
 	} else {
@@ -394,7 +394,7 @@ void clean_and_remap(time_info &tinfo, std::vector<circuit_info> &circuits, circ
 	    }
 	  }
 	  if(amap == -1 || pmap == -1) {
-	    fprintf(stderr, "Bad a/pmap on clean-and-remap (%d, %d)-(%d, %d)\n", ci.x0, cmap.sy-1-ci.y1, ci.x1, cmap.sy-1-ci.y0);
+	    fprintf(stderr, "Bad a/pmap on clean-and-remap (%d, %d)-(%d, %d)\n", ci.x0, ci.y1, ci.x1, ci.y0);
 	    has_error = true;
 	    break;
 	  }
@@ -491,20 +491,20 @@ void map_vias_set(int x, int y, via_info *via, const std::vector<circuit_info> *
     if(via->metal == -1)
       via->metal = nm;
     else if(via->metal != nm)
-      fprintf(stderr, "via at (%d, %d) touches multiple metal tracks\n", x, cmap->sy-1-y);
+      fprintf(stderr, "via at (%d, %d) touches multiple metal tracks\n", x, y);
   }
   if(na != -1 && np != -1 && na != np)
-    fprintf(stderr, "via at (%d, %d) touches split active/poly\n", x, cmap->sy-1-y);
+    fprintf(stderr, "via at (%d, %d) touches split active/poly\n", x, y);
   else if(na != -1 || np != -1) {
     int nn = na == -1 ? np : na;
     if((*circuit_infos)[nn].type == TRANSISTOR)
-      fprintf(stderr, "via at (%d, %d) touches a transistor\n", x, cmap->sy-1-y);
+      fprintf(stderr, "via at (%d, %d) touches a transistor\n", x, y);
     else if((*circuit_infos)[nn].type == CAPACITOR)
-      fprintf(stderr, "via at (%d, %d) touches a capacitor\n", x, cmap->sy-1-y);
+      fprintf(stderr, "via at (%d, %d) touches a capacitor\n", x, y);
     else if(via->active_poly == -1)
       via->active_poly = nn;
     else if(via->active_poly != nn)
-      fprintf(stderr, "via at (%d, %d) touches multiple poly/layer zones\n", x, cmap->sy-1-y);
+      fprintf(stderr, "via at (%d, %d) touches multiple poly/layer zones\n", x, y);
   }
 }
 
@@ -518,15 +518,16 @@ void map_vias(time_info &tinfo, std::vector<via_info> &via_infos, via_map &via_m
 	via_info via(-1, -1);
 	fill(x, y, cmap.sx, cmap.sy, 1, boost::bind(map_vias_set, _1, _2, &via, &circuit_infos, &used, &cmap), boost::bind(&pbm::p, vias, _1, _2), boost::bind(&pbm::p, &used, _1, _2));
 	if(via.metal == -1)
-	  fprintf(stderr, "via at (%d, %d) does not touch the metal\n", x, cmap.sy-1-y);
+	  fprintf(stderr, "via at (%d, %d) does not touch the metal\n", x, y);
 	if(via.active_poly == -1)
-	  fprintf(stderr, "via at (%d, %d) does not touch poly or active\n", x, cmap.sy-1-y);
+	  fprintf(stderr, "via at (%d, %d) does not touch poly or active\n", x, y);
 
-	int yy = cmap.sy-1-y;
-	//	if(!(x >= 6000 && x < 6750 && yy >= 5000 && yy < 6500))
+	//	if(x >= 1000 && x < 4000 && y > 250 && y < 500) {
 	//	  continue;
-	if(0 && x > 6500 && x < 7000 && yy >= 6500 && yy < 7000)
-	  continue;
+	//	}
+
+	//	if(!(x >= 6000 && x < 6750 && y >= 5000 && y < 6500))
+	//	  continue;
 	if(via.metal != -1 && via.active_poly != -1)
 	  via_infos.push_back(via);
       }
@@ -673,7 +674,7 @@ void build_nets(time_info &tinfo, std::vector<net_info> &net_infos, std::vector<
 	  printf("\n");
 	}
 #if 0
-	fprintf(stderr, "  + %c%d %d (%d, %d)-(%d, %d)", type_names[ci.type], cid, is_poly, ci.x0, cmap.sy-1-ci.y1, ci.x1, cmap.sy-1-ci.y0);
+	fprintf(stderr, "  + %c%d %d (%d, %d)-(%d, %d)", type_names[ci.type], cid, is_poly, ci.x0, ci.y1, ci.x1, ci.y0);
 	fprintf(stderr, "    ");
 	for(std::vector<int>::const_iterator j = stack.begin(); j != stack.end(); j++)
 	  fprintf(stderr, " %d", *j);
@@ -872,7 +873,7 @@ void build_transistors_metal_gate(time_info &tinfo, std::vector<trans_info> &tra
       const circuit_info &ci = circuit_infos[i];
       if(ci.neighbors.size() != 2) {
 	fprintf(stderr, "Gate at (%d, %d)-(%d, %d) has %d neighbors.\n",
-		ci.x0, cmap.sy-1-ci.y0, ci.x1, cmap.sy-1-ci.y1,
+		ci.x0, ci.y0, ci.x1, ci.y1,
 		int(ci.neighbors.size()));
 	continue;
       }
@@ -990,7 +991,7 @@ void lookup_gates_and_caps(time_info &tinfo, std::vector<circuit_info> &circuit_
       if(ci.type == TRANSISTOR || ci.type == CAPACITOR) {
 	int cm = cmap.p(1, x, y);
 	if(cm == -1) {
-	  fprintf(stderr, "%s does not touch metal at (%d, %d)\n", ci.type == TRANSISTOR ? "Gate" : "Capacitor", x, cmap.sy-1-y);
+	  fprintf(stderr, "%s does not touch metal at (%d, %d)\n", ci.type == TRANSISTOR ? "Gate" : "Capacitor", x, y);
 	  exit(1);
 	}
 	int nm = circuit_infos[cm].net;
@@ -998,14 +999,14 @@ void lookup_gates_and_caps(time_info &tinfo, std::vector<circuit_info> &circuit_
 	  if(ci.net == -1)
 	    ci.net = nm;
 	  else if(ci.net != nm) {
-	    fprintf(stderr, "Transistor touches multiple metal at (%d, %d)\n", x, cmap.sy-1-y);
+	    fprintf(stderr, "Transistor touches multiple metal at (%d, %d)\n", x, y);
 	    exit(1);
 	  }
 	} else {
 	  if(ci.netp == -1)
 	    ci.netp = nm;
 	  else if(ci.netp != nm) {
-	    fprintf(stderr, "Capacitor touches multiple metal at (%d, %d)\n", x, cmap.sy-1-y);
+	    fprintf(stderr, "Capacitor touches multiple metal at (%d, %d)\n", x, y);
 	    exit(1);
 	  }
 	}
@@ -1127,6 +1128,11 @@ int main(int argc, char **argv)
   while(!rd.eof()) {
     char buf[4096];
     string keyw = rd.gw();
+
+    if(keyw[0] == '#') {
+      rd.nl();
+      continue;
+    }
 
     if(keyw == "nmos-poly-single-metal") {
       method = nmos_poly_single_metal;
