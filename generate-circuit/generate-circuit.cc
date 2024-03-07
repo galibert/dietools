@@ -522,6 +522,8 @@ void map_vias(time_info &tinfo, std::vector<via_info> &via_infos, via_map &via_m
 	if(via.active_poly == -1)
 	  fprintf(stderr, "via at (%d, %d) does not touch poly or active\n", x, y);
 
+	if(0 && x > 7450 && x < 7500)
+	  continue;
 	//	if(x >= 1000 && x < 4000 && y > 250 && y < 500) {
 	//	  continue;
 	//	}
